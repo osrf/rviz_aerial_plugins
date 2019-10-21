@@ -10,4 +10,13 @@
     <message_type>px4_msgs/msg/BatteryStatus</message_type>
   </class>
 
+  <class
+    name="rviz_aerial_plugins/FlighInfo"
+    type="rviz_aerial_plugins::displays::FlighInfoDisplay"
+    base_class_type="rviz_common::Panel">
+    <description>
+      Displays flight information.
+    </description>
+  </class>
+
 </library>

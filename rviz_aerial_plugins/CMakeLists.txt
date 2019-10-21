@@ -67,10 +67,18 @@ find_package(px4_msgs REQUIRED)
 # These need to be added in the add_library() call so AUTOMOC detects them.
 set(rviz_aerial_plugins_headers_to_moc
   include/rviz_aerial_plugins/displays/battery/battery_display.hpp
+  include/rviz_aerial_plugins/displays/flight_info/flight_info_panel.hpp
+  include/rviz_aerial_plugins/displays/flight_info/compass_widget.hpp
+  include/rviz_aerial_plugins/displays/flight_info/attitude_display_indicator_widget.hpp
+  include/rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.hpp
 )
 
 set(rviz_aerial_plugins_source_files
   src/rviz_aerial_plugins/displays/battery/battery_display.cpp
+  src/rviz_aerial_plugins/displays/flight_info/flight_info_panel.cpp
+  src/rviz_aerial_plugins/displays/flight_info/compass_widget.cpp
+  src/rviz_aerial_plugins/displays/flight_info/attitude_display_indicator_widget.cpp
+  src/rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.cpp
 )
 
 add_library(rviz_aerial_plugins SHARED
