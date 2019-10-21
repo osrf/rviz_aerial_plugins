@@ -20,12 +20,18 @@
 #include <QHBoxLayout>
 #include <QGroupBox>
 
+#include "rviz_common/ros_integration/ros_node_abstraction_iface.hpp"
+
 class VehicleInformationWidget: public QWidget
 {
 public:
     VehicleInformationWidget(QWidget* parent = 0);
 
-public:
+    void setAlt(float alt);
+    void setGroundSpeed(float speed);
+    void setFlightTime();
+
+private:
     QLabel* alt_text;
     QLabel* ground_speed_text;
     QLabel* flight_time_text;

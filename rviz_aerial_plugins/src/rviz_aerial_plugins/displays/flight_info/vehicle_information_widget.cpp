@@ -54,3 +54,17 @@ VehicleInformationWidget::VehicleInformationWidget(QWidget* parent)
 
   setLayout(grid);
 }
+
+void VehicleInformationWidget::setFlightTime()
+{
+}
+
+void VehicleInformationWidget::setGroundSpeed(float speed)
+{
+  ground_speed_label->setText(QString("%1").arg(speed));
+}
+
+void VehicleInformationWidget::setAlt(float alt)
+{
+  alt_label->setText(QString("%1").arg(alt));
+}

@@ -112,6 +112,7 @@ pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
 ament_target_dependencies(rviz_aerial_plugins
   px4_msgs
   rclcpp
+  tf2
 )
 
 ament_export_include_directories(include)
