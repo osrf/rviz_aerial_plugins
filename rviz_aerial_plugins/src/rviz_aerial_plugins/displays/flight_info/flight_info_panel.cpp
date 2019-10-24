@@ -13,8 +13,6 @@
 // limitations under the License.
 
 #include "rviz_aerial_plugins/displays/flight_info/flight_info_panel.hpp"
-#include <QVBoxLayout>
-#include <QLabel>
 
 namespace rviz_aerial_plugins
 {
@@ -25,6 +23,8 @@ namespace displays
 FlighInfoDisplay::FlighInfoDisplay(QWidget* parent):
  rviz_common::Panel(parent), rviz_ros_node_()
 {
+  odometry_topic_name_ = "vehicle_odometry";
+  attitude_topic_name_ = "vehicle_attitude";
 }
 
 FlighInfoDisplay::~FlighInfoDisplay()
@@ -39,21 +39,40 @@ void FlighInfoDisplay::onInitialize()
   compass_widget_ = new CompassWidget();
   adi_widget_ = new ADIWidget();
   vi_widget_ = new VehicleInformationWidget();
+  namespace_ = new QLineEdit("");
+  QPushButton* subcribe_button = new QPushButton("Subcribe");
 
   QGridLayout *grid = new QGridLayout;
-
-  QComboBox* combo_topics = new QComboBox();
 
   grid->addWidget( compass_widget_ , 0, 0);
   grid->addWidget( adi_widget_, 0, 1);
   grid->addWidget( vi_widget_, 1, 0, 1, 2);
-  grid->addWidget( combo_topics, 2, 0, 1, 2);
+  grid->addWidget( namespace_, 2, 0);
+  grid->addWidget( subcribe_button, 2, 1);
+
+  QObject::connect(subcribe_button, SIGNAL(clicked()),this, SLOT(on_click_subscribeButton()));
 
   setLayout(grid);
 
+  subcribe2topics();
+
+}
+
+void FlighInfoDisplay::on_click_subscribeButton()
+{
+  attitude_topic_name_ = "/" + std::string(namespace_->text().toUtf8().constData()) + "/vehicle_attitude";
+  odometry_topic_name_ = "/" + std::string(namespace_->text().toUtf8().constData()) + "/vehicle_odometry";
+  vehicle_attitude_sub_.reset();
+  vehicle_odometry_sub_.reset();
+
+  subcribe2topics();
+}
+
+void FlighInfoDisplay::subcribe2topics()
+{
   vehicle_attitude_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<px4_msgs::msg::VehicleAttitude>(
-        "/vehicle_attitude",
+        attitude_topic_name_,
       10,
       [this](px4_msgs::msg::VehicleAttitude::ConstSharedPtr msg) {
 
@@ -73,7 +92,7 @@ void FlighInfoDisplay::onInitialize()
 
   vehicle_odometry_sub_ = rviz_ros_node_.lock()->get_raw_node()->
         template create_subscription<px4_msgs::msg::VehicleOdometry>(
-          "/vehicle_odometry",
+          odometry_topic_name_,
         10,
         [this](px4_msgs::msg::VehicleOdometry::ConstSharedPtr msg) {
           vi_widget_->setGroundSpeed(sqrt(msg->vx*msg->vx + msg->vy*msg->vy + msg->vz*msg->vz));

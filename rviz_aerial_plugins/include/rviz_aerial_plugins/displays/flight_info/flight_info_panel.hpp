@@ -17,7 +17,9 @@
 #define RVIZ_AERIAL_PLUGINS__PANELS__FLIGHTINFO__FLIGHTINFO_PANEL_HPP_
 
 #include <memory>
-#include <QComboBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 
 #ifndef Q_MOC_RUN
 
@@ -52,16 +54,22 @@ public:
   void onInitialize() override;
 
 private:
-
   rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
+
+  void subcribe2topics();
+
+private slots:
+  void on_click_subscribeButton();
 
 protected:
   CompassWidget* compass_widget_;
   ADIWidget* adi_widget_;
   VehicleInformationWidget* vi_widget_;
   rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr rviz_ros_node_;
-
+  QLineEdit* namespace_;
+  std::string attitude_topic_name_;
+  std::string odometry_topic_name_;
 };
 
 } // namespace displays
