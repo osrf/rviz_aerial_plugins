@@ -19,4 +19,13 @@
     </description>
   </class>
 
+  <class
+    name="rviz_aerial_plugins/Goal3D"
+    type="rviz_aerial_plugins::displays::Goal3DDisplay"
+    base_class_type="rviz_common::Panel">
+    <description>
+      Goal 3D
+    </description>
+  </class>
+
 </library>

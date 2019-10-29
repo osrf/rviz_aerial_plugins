@@ -20,6 +20,9 @@
 
   <depend>proposed_aerial_msgs</depend>
   <depend>px4_msgs</depend>
+  <depend>interactive_markers</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
 
   <test_depend>ament_cmake_cppcheck</test_depend>
   <test_depend>ament_cmake_cpplint</test_depend>

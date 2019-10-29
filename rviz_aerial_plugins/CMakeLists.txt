@@ -63,6 +63,10 @@ find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(px4_msgs REQUIRED)
+find_package(interactive_markers REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 # These need to be added in the add_library() call so AUTOMOC detects them.
 set(rviz_aerial_plugins_headers_to_moc
@@ -71,6 +75,8 @@ set(rviz_aerial_plugins_headers_to_moc
   include/rviz_aerial_plugins/displays/flight_info/compass_widget.hpp
   include/rviz_aerial_plugins/displays/flight_info/attitude_display_indicator_widget.hpp
   include/rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.hpp
+  include/rviz_aerial_plugins/displays/goal3D/goal3D_display.hpp
+  include/rviz_aerial_plugins/displays/goal3D/goal3d_widget.hpp
 )
 
 set(rviz_aerial_plugins_source_files
@@ -79,6 +85,8 @@ set(rviz_aerial_plugins_source_files
   src/rviz_aerial_plugins/displays/flight_info/compass_widget.cpp
   src/rviz_aerial_plugins/displays/flight_info/attitude_display_indicator_widget.cpp
   src/rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.cpp
+  src/rviz_aerial_plugins/displays/goal3D/goal3D_display.cpp
+  src/rviz_aerial_plugins/displays/goal3D/goal3d_widget.cpp
 )
 
 add_library(rviz_aerial_plugins SHARED
@@ -113,6 +121,10 @@ ament_target_dependencies(rviz_aerial_plugins
   px4_msgs
   rclcpp
   tf2
+  interactive_markers
+  std_msgs
+  geometry_msgs
+  visualization_msgs
 )
 
 ament_export_include_directories(include)
