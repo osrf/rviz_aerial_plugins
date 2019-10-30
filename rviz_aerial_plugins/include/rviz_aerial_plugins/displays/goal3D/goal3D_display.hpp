@@ -66,11 +66,12 @@ namespace rviz_aerial_plugins
 namespace displays
 {
 
+  // code originally from https://github.com/ethz-asl/geodetic_utils/blob/master/geodetic_utils/include/geodetic_utils/geodetic_conv.hpp
   class GeodeticConverter
   {
    public:
     GeodeticConverter(double latitude = 0, double longitude = 0, double altitude = 0)
-      : home_latitude_(latitude), home_longitude_(longitude)
+      : home_latitude_(latitude), home_longitude_(longitude), home_altitude_(altitude)
     {
 
       kSemimajorAxis = 6378137;
@@ -79,11 +80,9 @@ namespace displays
       kSecondEccentricitySquared = 6.73949674228 * 0.001;
       kFlattening = 1 / 298.257223563;
 
-
       // Save NED origin
       home_latitude_rad_ = deg2Rad(latitude);
       home_longitude_rad_ = deg2Rad(longitude);
-      home_altitude_ = altitude;
 
       // Compute ECEF of NED origin
       geodetic2Ecef(latitude, longitude, altitude, home_ecef_x_, home_ecef_y_, home_ecef_z_);
@@ -95,11 +94,31 @@ namespace displays
       ned_to_ecef_matrix_ = nRe(home_latitude_rad_, home_longitude_rad_).transpose();
     }
 
-    void getHome(double* latitude, double* longitude, double* altitude)
+    void getHome(double& latitude, double& longitude, double& altitude)
     {
-      *latitude = home_latitude_;
-      *longitude = home_longitude_;
-      *altitude = home_altitude_;
+      latitude = home_latitude_;
+      longitude = home_longitude_;
+      altitude = home_altitude_;
+    }
+
+    void setHome(const double latitude, const double longitude, const double altitude)
+    {
+      home_latitude_ = latitude;
+      home_longitude_ = longitude;
+      home_altitude_ = altitude;
+
+      // Save NED origin
+      home_latitude_rad_ = deg2Rad(latitude);
+      home_longitude_rad_ = deg2Rad(longitude);
+
+      // Compute ECEF of NED origin
+      geodetic2Ecef(latitude, longitude, altitude, home_ecef_x_, home_ecef_y_, home_ecef_z_);
+
+      // Compute ECEF to NED and NED to ECEF matrices
+      double phiP = atan2(home_ecef_z_, sqrt(pow(home_ecef_x_, 2) + pow(home_ecef_y_, 2)));
+
+      ecef_to_ned_matrix_ = nRe(phiP, home_longitude_rad_);
+      ned_to_ecef_matrix_ = nRe(home_latitude_rad_, home_longitude_rad_).transpose();
     }
 
     void geodetic2Ecef(const double latitude, const double longitude, const double altitude,
@@ -143,6 +162,82 @@ namespace displays
       latitude = rad2Deg(atan((z + kSecondEccentricitySquared * Z_0) / r));
       longitude = rad2Deg(atan2(y, x));
     }
+
+    void ecef2Ned(const double x, const double y, const double z,
+                  double& north, double& east, double& down)
+      {
+        // Converts ECEF coordinate position into local-tangent-plane NED.
+        // Coordinates relative to given ECEF coordinate frame.
+
+        Eigen::Vector3d vect, ret;
+        vect(0) = x - home_ecef_x_;
+        vect(1) = y - home_ecef_y_;
+        vect(2) = z - home_ecef_z_;
+        ret = ecef_to_ned_matrix_ * vect;
+        north = ret(0);
+        east = ret(1);
+        down = -ret(2);
+      }
+
+      void ned2Ecef(const double north, const double east, const double down,
+                    double& x, double& y, double& z)
+      {
+        // NED (north/east/down) to ECEF coordinates
+        Eigen::Vector3d ned, ret;
+        ned(0) = north;
+        ned(1) = east;
+        ned(2) = -down;
+        ret = ned_to_ecef_matrix_ * ned;
+        x = ret(0) + home_ecef_x_;
+        y = ret(1) + home_ecef_y_;
+        z = ret(2) + home_ecef_z_;
+      }
+
+      void geodetic2Ned(const double latitude, const double longitude, const double altitude,
+                        double& north, double& east, double& down)
+      {
+        // Geodetic position to local NED frame
+        double x, y, z;
+        geodetic2Ecef(latitude, longitude, altitude, x, y, z);
+        ecef2Ned(x, y, z, north, east, down);
+      }
+
+      void ned2Geodetic(const double north, const double east, const double down,
+                        double& latitude, double& longitude, double& altitude)
+      {
+        // Local NED position to geodetic coordinates
+        double x, y, z;
+        ned2Ecef(north, east, down, x, y, z);
+        ecef2Geodetic(x, y, z, latitude, longitude, altitude);
+      }
+
+      void geodetic2Enu(const double latitude, const double longitude, const double altitude,
+                        double& east, double& north, double& up)
+      {
+        // Geodetic position to local ENU frame
+        double x, y, z;
+        geodetic2Ecef(latitude, longitude, altitude, x, y, z);
+
+        double aux_north, aux_east, aux_down;
+        ecef2Ned(x, y, z, aux_north, aux_east, aux_down);
+
+        east = aux_east;
+        north = aux_north;
+        up = -aux_down;
+      }
+
+      void enu2Geodetic(const double east, const double north, const double up,
+                        double& latitude, double& longitude, double& altitude)
+      {
+        // Local ENU position to geodetic coordinates
+
+        const double aux_north = north;
+        const double aux_east = east;
+        const double aux_down = -up;
+        double x, y, z;
+        ned2Ecef(aux_north, aux_east, aux_down, x, y, z);
+        ecef2Geodetic(x, y, z, latitude, longitude, altitude);
+      }
 
 private:
       // Geodetic system parameters

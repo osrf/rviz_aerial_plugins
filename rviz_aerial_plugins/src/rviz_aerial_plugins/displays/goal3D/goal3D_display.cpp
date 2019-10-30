@@ -86,35 +86,42 @@ void Goal3DDisplay::onInitialize()
 
 void Goal3DDisplay::on_click_position_setpointButton()
 {
-
-  double x, y, z;
   double lat, lon, alt;
-  geodetic_converter->geodetic2Ecef(latitude_, longitude_, altitude_, x, y, z);
+  double h_lat, h_lon, h_alt;
 
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-      "x %.5f\ty %.5f\tz %.5f", x, y, z);
+  geodetic_converter->getHome(h_lat, h_lon, h_alt);
 
   visualization_msgs::msg::InteractiveMarker int_marker;
   server_->get("quadrocopter", int_marker);
 
-  x+=int_marker.pose.position.x;
-  y+=int_marker.pose.position.y;
-
-  geodetic_converter->ecef2Geodetic(x, y, z, lat, lon, alt);
+  double east, north, up;
+  geodetic_converter->geodetic2Enu(h_lat, h_lon, h_alt,
+                                  east, north, up);
+  east += int_marker.pose.position.x;
+  north += int_marker.pose.position.y;
+  geodetic_converter->enu2Geodetic(east, north, up, lat, lon, alt);
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-      "lat %.5f\tlon %.5f", lat, lon);
+      "lat %.5f\tlon %.5f\talt: %.5f", lat, lon, alt);
+
+  geometry_msgs::msg::Quaternion q;
+  q.x = int_marker.pose.orientation.x;
+  q.y = int_marker.pose.orientation.y;
+  q.z = int_marker.pose.orientation.z;
+  q.w = int_marker.pose.orientation.w;
+  double yaw, pitch, roll;
+  tf2::getEulerYPR(q, yaw, pitch, roll);
 
   auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
   px4_msgs::msg::VehicleCommand msg_vehicle_command;
-  msg_vehicle_command.timestamp = time_node.nanoseconds()/1000 - 3000000;
+  msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
   msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_REPOSITION;
   msg_vehicle_command.param1 = -1;
   msg_vehicle_command.param2 = 1;
   msg_vehicle_command.param3 = 0;
-  msg_vehicle_command.param4 = heading_;
+  msg_vehicle_command.param4 = -yaw+1.57;
   msg_vehicle_command.param5 = lat;
   msg_vehicle_command.param6 = lon;
-  msg_vehicle_command.param7 = 3.0;
+  msg_vehicle_command.param7 = int_marker.pose.position.z;
   msg_vehicle_command.confirmation = 0;
   msg_vehicle_command.source_system = 255;
   msg_vehicle_command.target_system = 1;
@@ -132,7 +139,7 @@ void Goal3DDisplay::on_click_takeoffButton()
     if(!flying_){
       auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
       px4_msgs::msg::VehicleCommand msg_vehicle_command;
-      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000 - 3000000;
+      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
       msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_NAV_TAKEOFF;
       msg_vehicle_command.param1 = 0.1;
       msg_vehicle_command.param2 = 0;
@@ -151,7 +158,7 @@ void Goal3DDisplay::on_click_takeoffButton()
     }else{
       auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
       px4_msgs::msg::VehicleCommand msg_vehicle_command;
-      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000 - 3000000;
+      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
       msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_NAV_LAND;
       msg_vehicle_command.param1 = 0.1;
       msg_vehicle_command.param2 = 0;
@@ -182,7 +189,7 @@ void Goal3DDisplay::on_click_armButton()
 
   if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
     px4_msgs::msg::VehicleCommand msg_vehicle_command;
-    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000 - 3000000;
+    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
     msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM;
     msg_vehicle_command.param1 = 1;
     msg_vehicle_command.confirmation = 1;
@@ -196,7 +203,7 @@ void Goal3DDisplay::on_click_armButton()
   }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED)
   {
     px4_msgs::msg::VehicleCommand msg_vehicle_command;
-    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000 - 3000000;
+    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
     msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM;
     msg_vehicle_command.param1 = 0;
     msg_vehicle_command.confirmation = 1;
@@ -272,9 +279,8 @@ void Goal3DDisplay::subcribe2topics()
         altitude_ = msg->alt*1E-3;
 
         if(geodetic_converter==nullptr){
-          geodetic_converter = std::make_shared<GeodeticConverter>(latitude_, longitude_, msg->alt*1E-3);
+          geodetic_converter = std::make_shared<GeodeticConverter>(latitude_, longitude_, altitude_);
         }
-
     });
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_gps_position_name_);
@@ -434,7 +440,17 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
 {
   visualization_msgs::msg::Marker marker;
 
-  marker.type = visualization_msgs::msg::Marker::CUBE;
+  // marker.type = visualization_msgs::msg::Marker::CUBE;
+  // marker.scale.x = msg.scale * 0.45;
+  // marker.scale.y = msg.scale * 0.45;
+  // marker.scale.z = msg.scale * 0.45;
+  // marker.color.r = 0.5;
+  // marker.color.g = 0.5;
+  // marker.color.b = 0.5;
+  // marker.color.a = 1.0;
+
+  marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+  marker.mesh_resource = "package://mavlink_sitl_gazebo/models/rotors_description/meshes/iris.stl";
   marker.scale.x = msg.scale * 0.45;
   marker.scale.y = msg.scale * 0.45;
   marker.scale.z = msg.scale * 0.45;
@@ -442,6 +458,7 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
   marker.color.g = 0.5;
   marker.color.b = 0.5;
   marker.color.a = 1.0;
+
 
   return marker;
 }
