@@ -14,9 +14,6 @@
 
 #include "rviz_aerial_plugins/displays/goal3D/goal3D_display.hpp"
 
-#include <memory>
-#include <string>
-
 namespace rviz_aerial_plugins
 {
 
@@ -33,6 +30,7 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
   position_setpoint_topic_name_ = "/iris_0/position_setpoint";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
+  home_position_topic_name_ = "/iris_0/home_position";
 
   arming_state_ = 0;
   latitude_ = 0;
@@ -42,13 +40,49 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   flying_ = false;
 }
 
+void Goal3DDisplay::get_namespaces()
+{
+  auto names_and_namespaces = rviz_ros_node_.lock()->get_raw_node()->get_node_names();
+
+  std::set<std::string> namespaces;
+  for(auto topic_name: names_and_namespaces){
+    std::vector<std::string> topic_name_tokens = split (topic_name, '/');
+    if(topic_name_tokens.size() > 1){
+      std::string namespace_topic = topic_name_tokens[0];
+      if (namespace_topic.find("plane")!=std::string::npos ||
+          namespace_topic.find("iris")!=std::string::npos){
+            namespaces.insert(namespace_topic);
+      }
+    }
+  }
+  namespace_->blockSignals(true);
+  namespace_->clear();
+  for(auto n: namespaces){
+    namespace_->addItem(QString(n.c_str()));
+  }
+  namespace_->blockSignals(false);
+}
+
+int Goal3DDisplay::getTargetSystem()
+{
+  int result = -1;
+  std::string current_namespace(namespace_->currentText().toUtf8().constData());
+
+  std::vector<std::string> namespace_tokens = split (current_namespace, '_');
+  if(namespace_tokens.size() > 1){
+    result = atoi(namespace_tokens[1].c_str());
+  }
+  return result + 1;
+}
+
 void Goal3DDisplay::onInitialize()
 {
   rviz_ros_node_ = getDisplayContext()->getRosNodeAbstraction();
   server_ = std::make_unique<interactive_markers::InteractiveMarkerServer>("drone_goal", rviz_ros_node_.lock()->get_raw_node());
 
-  namespace_ = new QLineEdit("");
-  QPushButton* subcribe_button = new QPushButton("Subcribe");
+  namespace_ = new QComboBox();
+  get_namespaces();
+  QPushButton* refresh_button = new QPushButton("Refresh");
   QGridLayout *grid = new QGridLayout;
 
   label_arming_state_ = new QLabel();
@@ -62,7 +96,7 @@ void Goal3DDisplay::onInitialize()
   button_position_setpoint_ = new QPushButton("Go to point");
 
   grid->addWidget(namespace_, 0, 0);
-  grid->addWidget(subcribe_button, 0, 1);
+  grid->addWidget(refresh_button, 0, 1);
   grid->addWidget(label_name_arming_state_, 1, 0);
   grid->addWidget(label_arming_state_, 1, 1);
   grid->addWidget(label_name_vehicle_type_, 2, 0);
@@ -72,7 +106,8 @@ void Goal3DDisplay::onInitialize()
   grid->addWidget(button_position_setpoint_, 5, 0, 1, 2);
 
   setLayout(grid);
-  QObject::connect(subcribe_button, SIGNAL(clicked()),this, SLOT(on_click_subscribeButton()));
+  QObject::connect(namespace_, SIGNAL(currentIndexChanged(QString)),this, SLOT(on_changed_namespace(QString)));
+  QObject::connect(refresh_button, SIGNAL(clicked()),this, SLOT(on_click_refresheButton()));
   QObject::connect(button_arm_, SIGNAL(clicked()),this, SLOT(on_click_armButton()));
   QObject::connect(button_takeoff_, SIGNAL(clicked()),this, SLOT(on_click_takeoffButton()));
   QObject::connect(button_position_setpoint_, SIGNAL(clicked()),this, SLOT(on_click_position_setpointButton()));
@@ -88,6 +123,9 @@ void Goal3DDisplay::on_click_position_setpointButton()
 {
   double lat, lon, alt;
   double h_lat, h_lon, h_alt;
+
+  if(geodetic_converter==nullptr)
+    return;
 
   geodetic_converter->getHome(h_lat, h_lon, h_alt);
 
@@ -124,7 +162,7 @@ void Goal3DDisplay::on_click_position_setpointButton()
   msg_vehicle_command.param7 = int_marker.pose.position.z;
   msg_vehicle_command.confirmation = 0;
   msg_vehicle_command.source_system = 255;
-  msg_vehicle_command.target_system = 1;
+  msg_vehicle_command.target_system = getTargetSystem();
   msg_vehicle_command.target_component = 1;
   msg_vehicle_command.from_external = true;
   publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -150,7 +188,7 @@ void Goal3DDisplay::on_click_takeoffButton()
       msg_vehicle_command.param7 = 3.0;
       msg_vehicle_command.confirmation = 1;
       msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = 1;
+      msg_vehicle_command.target_system = getTargetSystem();
       msg_vehicle_command.target_component = 1;
       msg_vehicle_command.from_external = true;
       publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -169,7 +207,7 @@ void Goal3DDisplay::on_click_takeoffButton()
       msg_vehicle_command.param7 = 3.0;
       msg_vehicle_command.confirmation = 1;
       msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = 1;
+      msg_vehicle_command.target_system = getTargetSystem();
       msg_vehicle_command.target_component = 1;
       msg_vehicle_command.from_external = true;
       publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -194,7 +232,7 @@ void Goal3DDisplay::on_click_armButton()
     msg_vehicle_command.param1 = 1;
     msg_vehicle_command.confirmation = 1;
     msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = 1;
+    msg_vehicle_command.target_system = getTargetSystem();
     msg_vehicle_command.target_component = 1;
     msg_vehicle_command.from_external = true;
     publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -208,7 +246,7 @@ void Goal3DDisplay::on_click_armButton()
     msg_vehicle_command.param1 = 0;
     msg_vehicle_command.confirmation = 1;
     msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = 1;
+    msg_vehicle_command.target_system = getTargetSystem();
     msg_vehicle_command.target_component = 1;
     msg_vehicle_command.from_external = true;
     publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -221,8 +259,10 @@ void Goal3DDisplay::valueChangedInterface()
 
   if(flying_){
     button_takeoff_->setText("Land");
+    button_arm_->setDisabled(true);
   }else{
     button_takeoff_->setText("TakeOff");
+    button_arm_->setDisabled(false);
   }
 
   if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_INIT){
@@ -277,13 +317,21 @@ void Goal3DDisplay::subcribe2topics()
         latitude_ = msg->lat*1E-7;
         longitude_ = msg->lon*1E-7;
         altitude_ = msg->alt*1E-3;
-
-        if(geodetic_converter==nullptr){
-          geodetic_converter = std::make_shared<GeodeticConverter>(latitude_, longitude_, altitude_);
-        }
     });
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_gps_position_name_);
+
+  home_position_sub_ = rviz_ros_node_.lock()->get_raw_node()->
+      template create_subscription<px4_msgs::msg::HomePosition>(
+        home_position_topic_name_,
+      10,
+      [this](px4_msgs::msg::HomePosition::ConstSharedPtr msg) {
+        if(geodetic_converter==nullptr){
+          geodetic_converter = std::make_shared<GeodeticConverter>(msg->lat, msg->lon, msg->alt);
+        }
+    });
+
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + home_position_topic_name_);
 
   vehicle_attitude_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<px4_msgs::msg::VehicleAttitude>(
@@ -341,10 +389,9 @@ void Goal3DDisplay::subcribe2topics()
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Publish to: " + position_setpoint_topic_name_);
 }
 
-void Goal3DDisplay::on_click_subscribeButton()
+void Goal3DDisplay::on_changed_namespace(const QString& text)
 {
-
-  std::string namespace_str(namespace_->text().toUtf8().constData());
+  std::string namespace_str(text.toUtf8().constData());
 
   vehicle_gps_position_name_ = "/" + namespace_str + "/vehicle_gps_position";
   vehicle_command_name_ = "/" + namespace_str + "/vehicle_command";
@@ -352,6 +399,8 @@ void Goal3DDisplay::on_click_subscribeButton()
   attitude_topic_name_ = "/" + namespace_str + "/vehicle_attitude";
   odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
   position_setpoint_topic_name_ = "/" + namespace_str + "/position_setpoint";
+  vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
+  home_position_topic_name_ = "/" + namespace_str + "/home_position";
 
   vehicle_gps_position_sub_.reset();
   vehicle_status_sub_.reset();
@@ -360,8 +409,26 @@ void Goal3DDisplay::on_click_subscribeButton()
   vehicle_odometry_sub_.reset();
   publisher_vehicle_command_.reset();
   publisher_setpoint_.reset();
+  home_position_sub_.reset();
 
   subcribe2topics();
+}
+
+void Goal3DDisplay::on_click_refresheButton()
+{
+  get_namespaces();
+
+  auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
+  px4_msgs::msg::VehicleCommand msg_vehicle_command;
+  msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
+  msg_vehicle_command.command = 175;//px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_HOME;
+  msg_vehicle_command.confirmation = 1;
+  msg_vehicle_command.source_system = 255;
+  msg_vehicle_command.target_system = getTargetSystem();
+  msg_vehicle_command.target_component = 1;
+  msg_vehicle_command.from_external = true;
+  publisher_vehicle_command_->publish(msg_vehicle_command);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "VEHICLE_CMD_DO_SET_HOME");
 }
 
 geometry_msgs::msg::TransformStamped toMsg(const tf2::Stamped<tf2::Transform>& in)
@@ -440,15 +507,6 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
 {
   visualization_msgs::msg::Marker marker;
 
-  // marker.type = visualization_msgs::msg::Marker::CUBE;
-  // marker.scale.x = msg.scale * 0.45;
-  // marker.scale.y = msg.scale * 0.45;
-  // marker.scale.z = msg.scale * 0.45;
-  // marker.color.r = 0.5;
-  // marker.color.g = 0.5;
-  // marker.color.b = 0.5;
-  // marker.color.a = 1.0;
-
   marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
   marker.mesh_resource = "package://mavlink_sitl_gazebo/models/rotors_description/meshes/iris.stl";
   marker.scale.x = msg.scale * 0.45;
@@ -458,7 +516,6 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
   marker.color.g = 0.5;
   marker.color.b = 0.5;
   marker.color.a = 1.0;
-
 
   return marker;
 }
