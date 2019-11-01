@@ -20,6 +20,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QComboBox>
+
+#include <rviz_aerial_plugins/utils/utils.hpp>
 
 #ifndef Q_MOC_RUN
 
@@ -58,16 +61,17 @@ private:
   rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
 
   void subcribe2topics();
+  void add_namespaces_to_combobox();
 
 private slots:
-  void on_click_subscribeButton();
+  void on_changed_namespace(const QString& text);
 
 protected:
   CompassWidget* compass_widget_;
   ADIWidget* adi_widget_;
   VehicleInformationWidget* vi_widget_;
   rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr rviz_ros_node_;
-  QLineEdit* namespace_;
+  QComboBox* namespace_;
   std::string attitude_topic_name_;
   std::string odometry_topic_name_;
 };

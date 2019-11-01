@@ -90,7 +90,7 @@ private:
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
 
   void subcribe2topics();
-  void get_namespaces();
+  void add_namespaces_to_combobox();
   int getTargetSystem();
 
   void makeQuadrocopterMarker(const tf2::Vector3& position);

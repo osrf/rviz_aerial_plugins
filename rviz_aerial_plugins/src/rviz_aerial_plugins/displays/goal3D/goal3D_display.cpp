@@ -40,21 +40,12 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   flying_ = false;
 }
 
-void Goal3DDisplay::get_namespaces()
+void Goal3DDisplay::add_namespaces_to_combobox()
 {
   auto names_and_namespaces = rviz_ros_node_.lock()->get_raw_node()->get_node_names();
 
-  std::set<std::string> namespaces;
-  for(auto topic_name: names_and_namespaces){
-    std::vector<std::string> topic_name_tokens = split (topic_name, '/');
-    if(topic_name_tokens.size() > 1){
-      std::string namespace_topic = topic_name_tokens[0];
-      if (namespace_topic.find("plane")!=std::string::npos ||
-          namespace_topic.find("iris")!=std::string::npos){
-            namespaces.insert(namespace_topic);
-      }
-    }
-  }
+  std::set<std::string> namespaces = get_namespaces(names_and_namespaces);
+
   namespace_->blockSignals(true);
   namespace_->clear();
   for(auto n: namespaces){
@@ -81,7 +72,7 @@ void Goal3DDisplay::onInitialize()
   server_ = std::make_unique<interactive_markers::InteractiveMarkerServer>("drone_goal", rviz_ros_node_.lock()->get_raw_node());
 
   namespace_ = new QComboBox();
-  get_namespaces();
+  add_namespaces_to_combobox();
   QPushButton* refresh_button = new QPushButton("Refresh");
   QGridLayout *grid = new QGridLayout;
 
@@ -162,7 +153,7 @@ void Goal3DDisplay::on_click_position_setpointButton()
   msg_vehicle_command.param7 = int_marker.pose.position.z;
   msg_vehicle_command.confirmation = 0;
   msg_vehicle_command.source_system = 255;
-  msg_vehicle_command.target_system = getTargetSystem();
+  msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
   msg_vehicle_command.target_component = 1;
   msg_vehicle_command.from_external = true;
   publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -188,7 +179,7 @@ void Goal3DDisplay::on_click_takeoffButton()
       msg_vehicle_command.param7 = 3.0;
       msg_vehicle_command.confirmation = 1;
       msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = getTargetSystem();
+      msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
       msg_vehicle_command.target_component = 1;
       msg_vehicle_command.from_external = true;
       publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -207,7 +198,7 @@ void Goal3DDisplay::on_click_takeoffButton()
       msg_vehicle_command.param7 = 3.0;
       msg_vehicle_command.confirmation = 1;
       msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = getTargetSystem();
+      msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
       msg_vehicle_command.target_component = 1;
       msg_vehicle_command.from_external = true;
       publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -232,7 +223,7 @@ void Goal3DDisplay::on_click_armButton()
     msg_vehicle_command.param1 = 1;
     msg_vehicle_command.confirmation = 1;
     msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = getTargetSystem();
+    msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
     msg_vehicle_command.target_component = 1;
     msg_vehicle_command.from_external = true;
     publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -246,7 +237,7 @@ void Goal3DDisplay::on_click_armButton()
     msg_vehicle_command.param1 = 0;
     msg_vehicle_command.confirmation = 1;
     msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = getTargetSystem();
+    msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
     msg_vehicle_command.target_component = 1;
     msg_vehicle_command.from_external = true;
     publisher_vehicle_command_->publish(msg_vehicle_command);
@@ -416,7 +407,7 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
 
 void Goal3DDisplay::on_click_refresheButton()
 {
-  get_namespaces();
+  add_namespaces_to_combobox();
 
   auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
   px4_msgs::msg::VehicleCommand msg_vehicle_command;
@@ -424,7 +415,7 @@ void Goal3DDisplay::on_click_refresheButton()
   msg_vehicle_command.command = 175;//px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_HOME;
   msg_vehicle_command.confirmation = 1;
   msg_vehicle_command.source_system = 255;
-  msg_vehicle_command.target_system = getTargetSystem();
+  msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
   msg_vehicle_command.target_component = 1;
   msg_vehicle_command.from_external = true;
   publisher_vehicle_command_->publish(msg_vehicle_command);
