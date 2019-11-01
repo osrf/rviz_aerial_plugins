@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "rviz_aerial_plugins/displays/flight_info/flight_info_panel.hpp"
+#include "rviz_common/load_resource.hpp"
 
 namespace rviz_aerial_plugins
 {
@@ -23,6 +24,8 @@ namespace displays
 FlighInfoDisplay::FlighInfoDisplay(QWidget* parent):
  rviz_common::Panel(parent), rviz_ros_node_()
 {
+  // setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Battery.png"));
+
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
   attitude_topic_name_ = "/iris_0/vehicle_attitude";
 }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "rviz_aerial_plugins/displays/goal3D/goal3D_display.hpp"
+#include "rviz_common/load_resource.hpp"
 
 namespace rviz_aerial_plugins
 {
@@ -74,6 +75,8 @@ void Goal3DDisplay::onInitialize()
   namespace_ = new QComboBox();
   add_namespaces_to_combobox();
   QPushButton* refresh_button = new QPushButton("Refresh");
+  refresh_button->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Refresh.png"));
+
   QGridLayout *grid = new QGridLayout;
 
   label_arming_state_ = new QLabel();
@@ -82,9 +85,12 @@ void Goal3DDisplay::onInitialize()
   label_name_vehicle_type_ = new QLabel("Vehicle type:");
 
   button_arm_ = new QPushButton("Arm");
+  button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
   button_takeoff_ = new QPushButton("Takeoff");
+  button_takeoff_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Takeoff.png"));
   button_takeoff_->setEnabled(false);
-  button_position_setpoint_ = new QPushButton("Go to point");
+  button_position_setpoint_ = new QPushButton("Go to");
+  button_position_setpoint_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Goal3D.png"));
 
   grid->addWidget(namespace_, 0, 0);
   grid->addWidget(refresh_button, 0, 1);
@@ -250,9 +256,11 @@ void Goal3DDisplay::valueChangedInterface()
 
   if(flying_){
     button_takeoff_->setText("Land");
+    button_takeoff_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Land.png"));
     button_arm_->setDisabled(true);
   }else{
     button_takeoff_->setText("TakeOff");
+    button_takeoff_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Takeoff.png"));
     button_arm_->setDisabled(false);
   }
 
@@ -261,10 +269,12 @@ void Goal3DDisplay::valueChangedInterface()
   }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
     label_arming_state_->setText(QString("Standby"));
     button_arm_->setText(QString("Arm"));
+    button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
     button_takeoff_->setEnabled(false);
   }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED){
     label_arming_state_->setText(QString("Armed"));
     button_arm_->setText(QString("Disarm"));
+    button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOff.png"));
     button_takeoff_->setEnabled(true);
   }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY_ERROR){
     label_arming_state_->setText(QString("Standby error"));

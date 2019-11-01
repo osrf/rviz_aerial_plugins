@@ -28,6 +28,7 @@
 #include "rviz_common/properties/float_property.hpp"
 #include "rviz_common/properties/int_property.hpp"
 #include "rviz_common/frame_manager_iface.hpp"
+#include "rviz_common/load_resource.hpp"
 
 namespace rviz_aerial_plugins
 {
@@ -37,6 +38,7 @@ namespace displays
 
 BatteryDisplay::BatteryDisplay()
 {
+  setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Battery.png"));
 
   battery_status_property_ = new rviz_common::properties::FloatProperty( "Battery Status", 1,
                                                     "Battery voltage.", this);
