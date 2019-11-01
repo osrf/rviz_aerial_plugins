@@ -217,10 +217,7 @@ void Goal3DDisplay::on_click_armButton()
 {
   auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
 
-  std::ostringstream oss;
-  oss << "arming_state " << arming_state_;
-
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arming state %d", arming_state_);
 
   if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
     px4_msgs::msg::VehicleCommand msg_vehicle_command;
@@ -444,34 +441,14 @@ geometry_msgs::msg::TransformStamped toMsg(const tf2::Stamped<tf2::Transform>& i
   return out;
 }
 
-
-void
-Goal3DDisplay::processFeedback(
+void Goal3DDisplay::processFeedback(
   const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr & feedback)
 {
   std::ostringstream oss;
   oss << "Feedback from marker '" << feedback->marker_name << "' "
       << " / control '" << feedback->control_name << "'";
 
-  std::ostringstream mouse_point_ss;
-  if (feedback->mouse_point_valid) {
-    mouse_point_ss << " at " << feedback->mouse_point.x
-                   << ", " << feedback->mouse_point.y
-                   << ", " << feedback->mouse_point.z
-                   << " in frame " << feedback->header.frame_id;
-  }
-
   switch (feedback->event_type) {
-    case visualization_msgs::msg::InteractiveMarkerFeedback::BUTTON_CLICK:
-      oss << ": button click" << mouse_point_ss.str() << ".";
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
-      break;
-
-    case visualization_msgs::msg::InteractiveMarkerFeedback::MENU_SELECT:
-      oss << ": menu item " << feedback->menu_entry_id << " clicked" << mouse_point_ss.str() << ".";
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
-      break;
-
     case visualization_msgs::msg::InteractiveMarkerFeedback::POSE_UPDATE:
       oss << ": pose changed"
           << "\nposition = "
@@ -483,19 +460,7 @@ Goal3DDisplay::processFeedback(
           << ", " << feedback->pose.orientation.x
           << ", " << feedback->pose.orientation.y
           << ", " << feedback->pose.orientation.z
-          << "\nframe: " << feedback->header.frame_id
-          << " time: " << feedback->header.stamp.sec << "sec, "
-          << feedback->header.stamp.nanosec << " nsec" ;
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
-      break;
-
-    case visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_DOWN:
-      oss << ": mouse down" << mouse_point_ss.str() << "." ;
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
-      break;
-
-    case visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP:
-      oss << ": mouse up" << mouse_point_ss.str() << "." ;
+          << "\nframe: " << feedback->header.frame_id;
       RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), oss.str());
       break;
   }

@@ -56,7 +56,6 @@ private:
     //// draw pitch lines & marker
     void drawPitch(QPainter& painter);
 
-    QBrush bgSky;
     QBrush bgGround;
 
     QPen   whitePen;

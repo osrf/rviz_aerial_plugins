@@ -19,7 +19,6 @@ ADIWidget::ADIWidget(QWidget* parent) : QWidget( parent ),
   blackPen(Qt::black),
   pitchPen(Qt::white),
   pitchZero(Qt::green),
-  bgSky(QColor(48,172,220)),
   bgGround(QColor(0, 147, 57))
 {
   offset_ = 2;
