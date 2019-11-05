@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 #include <rviz_aerial_plugins/utils/utils.hpp>
-#include <rviz_aerial_plugins/utils/geodetic_converter.hpp>
 
 #ifndef Q_MOC_RUN
 
@@ -33,6 +32,7 @@
 
 #include "geometry_msgs/msg/vector3.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "std_msgs/msg/color_rgba.hpp"
 
 #include "px4_msgs/msg/vehicle_gps_position.hpp"
@@ -42,7 +42,6 @@
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/position_setpoint.hpp"
 #include "px4_msgs/msg/vehicle_land_detected.hpp"
-#include "px4_msgs/msg/home_position.hpp"
 
 #include "visualization_msgs/msg/interactive_marker.hpp"
 #include <interactive_markers/menu_handler.hpp>
@@ -59,7 +58,15 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QComboBox>
+
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include "tf2_ros/create_timer_ros.h"
+
 #endif
+
+using namespace std::chrono_literals;
 
 namespace rviz_aerial_plugins
 {
@@ -109,9 +116,9 @@ private:
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
-  rclcpp::Subscription<px4_msgs::msg::HomePosition>::SharedPtr home_position_sub_;
   rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr publisher_vehicle_command_;
   rclcpp::Publisher<px4_msgs::msg::PositionSetpoint>::SharedPtr publisher_setpoint_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_pose_stamped_;
 
   QComboBox* namespace_;
   QLabel* label_arming_state_;
@@ -128,7 +135,7 @@ private:
   std::string odometry_topic_name_;
   std::string position_setpoint_topic_name_;
   std::string vehicle_land_detected_topic_name_;
-  std::string home_position_topic_name_;
+  std::string pose_stamped_name_;
 
   QPushButton* button_arm_;
   QPushButton* button_takeoff_;
@@ -142,7 +149,10 @@ private:
   float altitude_rel_;
   bool flying_;
 
-  std::shared_ptr<GeodeticConverter> geodetic_converter;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::shared_ptr<tf2_ros::Buffer> buffer_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
 signals:
       void valueChangedInterface_signal();

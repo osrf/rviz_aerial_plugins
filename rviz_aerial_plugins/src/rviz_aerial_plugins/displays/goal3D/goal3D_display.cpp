@@ -23,6 +23,7 @@ namespace displays
 
 Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   rviz_common::Panel(parent), rviz_ros_node_()
+
 {
   vehicle_gps_position_name_ = "/iris_0/vehicle_gps_position";
   vehicle_command_name_ = "/iris_0/vehicle_command";
@@ -31,7 +32,7 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
   position_setpoint_topic_name_ = "/iris_0/position_setpoint";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
-  home_position_topic_name_ = "/iris_0/home_position";
+  pose_stamped_name_ = "/iris_0/command_pose";
 
   arming_state_ = 0;
   latitude_ = 0;
@@ -110,6 +111,41 @@ void Goal3DDisplay::onInitialize()
   QObject::connect(button_position_setpoint_, SIGNAL(clicked()),this, SLOT(on_click_position_setpointButton()));
   QObject::connect(this, SIGNAL(valueChangedInterface_signal()),this, SLOT(valueChangedInterface()));
 
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(rviz_ros_node_.lock()->get_raw_node());
+
+  auto clock_ros = rviz_ros_node_.lock()->get_raw_node()->get_clock();
+  buffer_ = std::make_shared<tf2_ros::Buffer>(clock_ros);
+  buffer_->setUsingDedicatedThread(true);
+  auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+    rviz_ros_node_.lock()->get_raw_node()->get_node_base_interface(),
+    rviz_ros_node_.lock()->get_raw_node()->get_node_timers_interface());
+  buffer_->setCreateTimerInterface(timer_interface);
+
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*buffer_);
+
+  auto timer_callback =
+     [this]() -> void {
+       visualization_msgs::msg::InteractiveMarker int_marker;
+       server_->get("quadrocopter", int_marker);
+
+       auto odom_tf_msg = std::make_shared<geometry_msgs::msg::TransformStamped>();
+       odom_tf_msg->header.frame_id = "map";
+       odom_tf_msg->child_frame_id = "quadcopter_goal";
+       // Stuff and publish /tf
+       odom_tf_msg->header.stamp = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
+       odom_tf_msg->transform.translation.x = int_marker.pose.position.x;
+       odom_tf_msg->transform.translation.y = int_marker.pose.position.y;
+       odom_tf_msg->transform.translation.z = int_marker.pose.position.z;
+       odom_tf_msg->transform.rotation.x = int_marker.pose.orientation.x;
+       odom_tf_msg->transform.rotation.y = int_marker.pose.orientation.y;
+       odom_tf_msg->transform.rotation.z = int_marker.pose.orientation.z;
+       odom_tf_msg->transform.rotation.w = int_marker.pose.orientation.w;
+
+       tf_broadcaster_->sendTransform(*odom_tf_msg);
+
+     };
+  timer_ = rviz_ros_node_.lock()->get_raw_node()->create_wall_timer(10ms, timer_callback);
+
   subcribe2topics();
 
   makeQuadrocopterMarker(tf2::Vector3(0, 0, 3));
@@ -118,51 +154,67 @@ void Goal3DDisplay::onInitialize()
 
 void Goal3DDisplay::on_click_position_setpointButton()
 {
-  double lat, lon, alt;
-  double h_lat, h_lon, h_alt;
-
-  if(geodetic_converter==nullptr)
-    return;
-
-  geodetic_converter->getHome(h_lat, h_lon, h_alt);
-
   visualization_msgs::msg::InteractiveMarker int_marker;
   server_->get("quadrocopter", int_marker);
 
-  double east, north, up;
-  geodetic_converter->geodetic2Enu(h_lat, h_lon, h_alt,
-                                  east, north, up);
-  east += int_marker.pose.position.x;
-  north += int_marker.pose.position.y;
-  geodetic_converter->enu2Geodetic(east, north, up, lat, lon, alt);
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-      "lat %.5f\tlon %.5f\talt: %.5f", lat, lon, alt);
+  std::string str_test =   std::string(namespace_->currentText().toUtf8().constData()) + "/odom";
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "map %s", str_test.c_str());
 
-  geometry_msgs::msg::Quaternion q;
-  q.x = int_marker.pose.orientation.x;
-  q.y = int_marker.pose.orientation.y;
-  q.z = int_marker.pose.orientation.z;
-  q.w = int_marker.pose.orientation.w;
-  double yaw, pitch, roll;
-  tf2::getEulerYPR(q, yaw, pitch, roll);
+  // if(buffer_->canTransform("map",
+  //                         str_test,
+  //                          tf2::TimePoint(), tf2::durationFromSec(1.0)))
+  // buffer_->waitForTransform(
+  //       "map",
+  //       str_test,
+  //          tf2::TimePoint(), tf2::durationFromSec(1.0),
+  //         [this, int_marker](const tf2_ros::TransformStampedFuture & future)
+  //     {
+  //       RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "waitForTransform");
+  //       geometry_msgs::msg::TransformStamped transform_callback_result;
+  //       transform_callback_result = future.get();
+  //       RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "%.5f\t%.5f\t%.5f",
+  //                   transform_callback_result.transform.translation.x,
+  //                   transform_callback_result.transform.translation.y,
+  //                   transform_callback_result.transform.translation.z);
 
-  auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-  px4_msgs::msg::VehicleCommand msg_vehicle_command;
-  msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-  msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_REPOSITION;
-  msg_vehicle_command.param1 = -1;
-  msg_vehicle_command.param2 = 1;
-  msg_vehicle_command.param3 = 0;
-  msg_vehicle_command.param4 = -yaw+1.57;
-  msg_vehicle_command.param5 = lat;
-  msg_vehicle_command.param6 = lon;
-  msg_vehicle_command.param7 = int_marker.pose.position.z;
-  msg_vehicle_command.confirmation = 0;
-  msg_vehicle_command.source_system = 255;
-  msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-  msg_vehicle_command.target_component = 1;
-  msg_vehicle_command.from_external = true;
-  publisher_vehicle_command_->publish(msg_vehicle_command);
+    geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
+
+        geometry_msgs::msg::PoseStamped msg;
+        msg.header.stamp = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
+        // msg.pose.position.x = transform_callback_result.transform.translation.x;
+        // msg.pose.position.y = transform_callback_result.transform.translation.y;
+        // msg.pose.position.z = int_marker.pose.position.z;
+        //
+        // msg.pose.orientation.x = transform_callback_result.transform.rotation.x;
+        // msg.pose.orientation.y = transform_callback_result.transform.rotation.y;
+        // msg.pose.orientation.z = transform_callback_result.transform.rotation.z;
+        // msg.pose.orientation.w = transform_callback_result.transform.rotation.w;
+
+        msg.pose.position.x = int_marker.pose.position.x - transform_callback_result.transform.translation.x;
+        msg.pose.position.y = int_marker.pose.position.y - transform_callback_result.transform.translation.y;
+        msg.pose.position.z = int_marker.pose.position.z;
+
+        msg.pose.orientation.x = int_marker.pose.orientation.x;
+        msg.pose.orientation.y = int_marker.pose.orientation.y;
+        msg.pose.orientation.z = int_marker.pose.orientation.z;
+        msg.pose.orientation.w = int_marker.pose.orientation.w;
+
+        publisher_pose_stamped_->publish(msg);
+  //     });
+  // else{
+  //   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "canTransform fails");
+  //
+  // }
+
+  // msg.pose.position.x = int_marker.pose.position.x;
+  // msg.pose.position.y = int_marker.pose.position.y;
+  // msg.pose.position.z = int_marker.pose.position.z;
+  //
+  // msg.pose.orientation.x = int_marker.pose.orientation.x;
+  // msg.pose.orientation.y = int_marker.pose.orientation.y;
+  // msg.pose.orientation.z = int_marker.pose.orientation.z;
+  // msg.pose.orientation.w = int_marker.pose.orientation.w;
+
 }
 
 void Goal3DDisplay::on_click_takeoffButton()
@@ -319,18 +371,6 @@ void Goal3DDisplay::subcribe2topics()
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_gps_position_name_);
 
-  home_position_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-      template create_subscription<px4_msgs::msg::HomePosition>(
-        home_position_topic_name_,
-      10,
-      [this](px4_msgs::msg::HomePosition::ConstSharedPtr msg) {
-        if(geodetic_converter==nullptr){
-          geodetic_converter = std::make_shared<GeodeticConverter>(msg->lat, msg->lon, msg->alt);
-        }
-    });
-
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + home_position_topic_name_);
-
   vehicle_attitude_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<px4_msgs::msg::VehicleAttitude>(
         attitude_topic_name_,
@@ -385,6 +425,12 @@ void Goal3DDisplay::subcribe2topics()
     rviz_ros_node_.lock()->get_raw_node()->
       create_publisher<px4_msgs::msg::PositionSetpoint>(position_setpoint_topic_name_, 10);
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Publish to: " + position_setpoint_topic_name_);
+
+  publisher_pose_stamped_ =
+    rviz_ros_node_.lock()->get_raw_node()->
+      create_publisher<geometry_msgs::msg::PoseStamped>(pose_stamped_name_, 10);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Publish to: " + pose_stamped_name_);
+
 }
 
 void Goal3DDisplay::on_changed_namespace(const QString& text)
@@ -398,7 +444,7 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
   position_setpoint_topic_name_ = "/" + namespace_str + "/position_setpoint";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
-  home_position_topic_name_ = "/" + namespace_str + "/home_position";
+  pose_stamped_name_ = "/" + namespace_str + "/command_pose";
 
   vehicle_gps_position_sub_.reset();
   vehicle_status_sub_.reset();
@@ -407,7 +453,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_odometry_sub_.reset();
   publisher_vehicle_command_.reset();
   publisher_setpoint_.reset();
-  home_position_sub_.reset();
 
   subcribe2topics();
 }

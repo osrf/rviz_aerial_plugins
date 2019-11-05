@@ -86,7 +86,6 @@ set(rviz_aerial_plugins_source_files
   src/rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.cpp
   src/rviz_aerial_plugins/displays/goal3D/goal3D_display.cpp
   src/rviz_aerial_plugins/utils/utils.cpp
-  src/rviz_aerial_plugins/utils/geodetic_converter.cpp
 )
 
 add_library(rviz_aerial_plugins SHARED
