@@ -19,7 +19,6 @@
   <exec_depend>libqt5-widgets</exec_depend>
 
   <depend>proposed_aerial_msgs</depend>
-  <depend>px4_msgs</depend>
   <depend>interactive_markers</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>

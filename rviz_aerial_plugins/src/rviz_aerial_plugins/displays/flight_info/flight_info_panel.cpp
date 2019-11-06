@@ -26,8 +26,8 @@ FlighInfoDisplay::FlighInfoDisplay(QWidget* parent):
 {
   // setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Battery.png"));
 
-  odometry_topic_name_ = "/iris_0/vehicle_odometry";
-  attitude_topic_name_ = "/iris_0/vehicle_attitude";
+  odometry_topic_name_ = "/iris_0/odometry";
+  attitude_topic_name_ = "/iris_0/attitude";
 }
 
 FlighInfoDisplay::~FlighInfoDisplay()
@@ -78,8 +78,8 @@ void FlighInfoDisplay::on_changed_namespace(const QString& text)
 {
   std::string namespace_str(text.toUtf8().constData());
 
-  attitude_topic_name_ = "/" + namespace_str + "/vehicle_attitude";
-  odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
+  attitude_topic_name_ = "/" + namespace_str + "/attitude";
+  odometry_topic_name_ = "/" + namespace_str + "/odometry";
   vehicle_attitude_sub_.reset();
   vehicle_odometry_sub_.reset();
 
@@ -89,16 +89,16 @@ void FlighInfoDisplay::on_changed_namespace(const QString& text)
 void FlighInfoDisplay::subcribe2topics()
 {
   vehicle_attitude_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-      template create_subscription<px4_msgs::msg::VehicleAttitude>(
+      template create_subscription<proposed_aerial_msgs::msg::Attitude>(
         attitude_topic_name_,
       10,
-      [this](px4_msgs::msg::VehicleAttitude::ConstSharedPtr msg) {
+      [this](proposed_aerial_msgs::msg::Attitude::ConstSharedPtr msg) {
 
         geometry_msgs::msg::Quaternion q;
-        q.x = msg->q[1];
-        q.y = msg->q[2];
-        q.z = msg->q[3];
-        q.w = msg->q[0];
+        q.x = msg->orientation.x;
+        q.y = msg->orientation.y;
+        q.z = msg->orientation.z;
+        q.w = msg->orientation.w;
         double yaw, pitch, roll;
         tf2::getEulerYPR(q, yaw, pitch, roll);
         compass_widget_->setAngle(yaw*180/3.1416);
@@ -107,15 +107,22 @@ void FlighInfoDisplay::subcribe2topics()
         adi_widget_->setRoll(-roll*180/3.1416);
         adi_widget_->update();
     });
-
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                "FlighInfoDisplay: %s", attitude_topic_name_.c_str());
   vehicle_odometry_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-        template create_subscription<px4_msgs::msg::VehicleOdometry>(
+        template create_subscription<nav_msgs::msg::Odometry>(
           odometry_topic_name_,
         10,
-        [this](px4_msgs::msg::VehicleOdometry::ConstSharedPtr msg) {
-          vi_widget_->setGroundSpeed(sqrt(msg->vx*msg->vx + msg->vy*msg->vy + msg->vz*msg->vz));
-          vi_widget_->setAlt(-msg->z);
+        [this](nav_msgs::msg::Odometry::ConstSharedPtr msg) {
+          vi_widget_->setGroundSpeed(sqrt(msg->twist.twist.linear.x*msg->twist.twist.linear.x
+                                        + msg->twist.twist.linear.y*msg->twist.twist.linear.y));
+          vi_widget_->setAlt(-msg->pose.pose.position.z);
+          vi_widget_->update();
+
       });
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                "FlighInfoDisplay: %s", odometry_topic_name_.c_str());
+
 }
 
 } // namespace displays

@@ -29,9 +29,8 @@
 #include "rviz_common/panel.hpp"
 #include "rviz_common/display_context.hpp"
 #include "rviz_aerial_plugins/visibility_control.hpp"
-#include "px4_msgs/msg/sensor_combined.hpp"
-#include "px4_msgs/msg/vehicle_attitude.hpp"
-#include "px4_msgs/msg/vehicle_odometry.hpp"
+#include "proposed_aerial_msgs/msg/attitude.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "rviz_aerial_plugins/displays/flight_info/compass_widget.hpp"
 #include "rviz_aerial_plugins/displays/flight_info/attitude_display_indicator_widget.hpp"
 #include "rviz_aerial_plugins/displays/flight_info/vehicle_information_widget.hpp"
@@ -57,8 +56,8 @@ public:
   void onInitialize() override;
 
 private:
-  rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
-  rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr vehicle_odometry_sub_;
+  rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
 
   void subcribe2topics();
   void add_namespaces_to_combobox();

@@ -62,7 +62,6 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(px4_msgs REQUIRED)
 find_package(interactive_markers REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -101,7 +100,6 @@ target_include_directories(rviz_aerial_plugins PUBLIC
   ${rviz_common_INCLUDE_DIRS}
   ${OGRE_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
-  ${px4_msgs_INCLUDE_DIRS}
 )
 
 target_link_libraries(rviz_aerial_plugins
@@ -118,7 +116,6 @@ target_compile_definitions(rviz_aerial_plugins PUBLIC "PLUGINLIB__DISABLE_BOOST_
 pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
 
 ament_target_dependencies(rviz_aerial_plugins
-  px4_msgs
   rclcpp
   tf2
   interactive_markers
@@ -133,7 +130,6 @@ ament_export_interfaces(rviz_aerial_plugins HAS_LIBRARY_TARGET)
 ament_export_dependencies(
   Qt5
   rviz_common
-  px4_msgs
   rclcpp
 )
 

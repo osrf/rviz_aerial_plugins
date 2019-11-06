@@ -34,10 +34,8 @@ public:
 private:
     QLabel* alt_text;
     QLabel* ground_speed_text;
-    QLabel* flight_time_text;
     QLabel* alt_label;
     QLabel* ground_speed_label;
-    QLabel* flight_time_label;
 };
 
 #endif // VEHICLE_INFORMATION_WIDGET_H
