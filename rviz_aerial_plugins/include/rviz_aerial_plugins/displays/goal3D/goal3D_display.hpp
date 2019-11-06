@@ -38,8 +38,8 @@
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 
 #include "proposed_aerial_msgs/msg/attitude.hpp"
+#include "proposed_aerial_msgs/srv/set_flight_mode.hpp"
 
-#include "px4_msgs/msg/vehicle_command.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/position_setpoint.hpp"
@@ -118,9 +118,10 @@ private:
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
   rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
-  rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr publisher_vehicle_command_;
   rclcpp::Publisher<px4_msgs::msg::PositionSetpoint>::SharedPtr publisher_setpoint_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_pose_stamped_;
+
+  rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedPtr set_flight_mode_client_;
 
   QComboBox* namespace_;
   QLabel* label_arming_state_;
@@ -133,13 +134,13 @@ private:
   QLabel* label_name_vehicle_type_;
 
   std::string vehicle_gps_position_name_;
-  std::string vehicle_command_name_;
   std::string vehicle_status_name_;
   std::string attitude_topic_name_;
   std::string odometry_topic_name_;
   std::string position_setpoint_topic_name_;
   std::string vehicle_land_detected_topic_name_;
   std::string pose_stamped_name_;
+  std::string set_flight_mode_name_;
 
   QPushButton* button_arm_;
   QPushButton* button_takeoff_;

@@ -26,13 +26,13 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
 
 {
   vehicle_gps_position_name_ = "/iris_0/gps";
-  vehicle_command_name_ = "/iris_0/vehicle_command";
   vehicle_status_name_ = "/iris_0/vehicle_status";
   attitude_topic_name_ = "/iris_0/attitude";
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
   position_setpoint_topic_name_ = "/iris_0/position_setpoint";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
   pose_stamped_name_ = "/iris_0/command_pose";
+  set_flight_mode_name_ = "/iris_0/set_flight_mode";
 
   arming_state_ = 0;
   latitude_ = 0;
@@ -184,85 +184,69 @@ void Goal3DDisplay::on_click_position_setpointButton()
 
 void Goal3DDisplay::on_click_takeoffButton()
 {
-  if(latitude_ != 0 && longitude_ != 0){
 
-    RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "flying_ %d", flying_);
-
-    if(!flying_){
-      auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-      px4_msgs::msg::VehicleCommand msg_vehicle_command;
-      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-      msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_NAV_TAKEOFF;
-      msg_vehicle_command.param1 = 0.1;
-      msg_vehicle_command.param2 = 0;
-      msg_vehicle_command.param3 = 0;
-      msg_vehicle_command.param4 = heading_;
-      msg_vehicle_command.param5 = latitude_;
-      msg_vehicle_command.param6 = longitude_;
-      msg_vehicle_command.param7 = 3.0;
-      msg_vehicle_command.confirmation = 1;
-      msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-      msg_vehicle_command.target_component = 1;
-      msg_vehicle_command.from_external = true;
-      publisher_vehicle_command_->publish(msg_vehicle_command);
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "VEHICLE_CMD_NAV_TAKEOFF %.5f %.5f", latitude_, longitude_);
-    }else{
-      auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-      px4_msgs::msg::VehicleCommand msg_vehicle_command;
-      msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-      msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_NAV_LAND;
-      msg_vehicle_command.param1 = 0.1;
-      msg_vehicle_command.param2 = 0;
-      msg_vehicle_command.param3 = 0;
-      msg_vehicle_command.param4 = heading_;
-      msg_vehicle_command.param5 = latitude_;
-      msg_vehicle_command.param6 = longitude_;
-      msg_vehicle_command.param7 = 3.0;
-      msg_vehicle_command.confirmation = 1;
-      msg_vehicle_command.source_system = 255;
-      msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-      msg_vehicle_command.target_component = 1;
-      msg_vehicle_command.from_external = true;
-      publisher_vehicle_command_->publish(msg_vehicle_command);
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "VEHICLE_CMD_NAV_TAKEOFF %5.f %5.f", latitude_, longitude_);
-    }
+  while (!set_flight_mode_client_->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                     "client interrupted while waiting for service to appear.");
+        return;
+      }
+      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                  "waiting for service to appear...");
   }
+  auto request = std::make_shared<proposed_aerial_msgs::srv::SetFlightMode::Request>();
+
+  if(!flying_){
+    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_FLYING;
+  }else{
+    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_LANDED;
+  }
+
+  using ServiceResponseFuture =
+    rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedFuture;
+  auto response_received_callback = [this](ServiceResponseFuture future) {
+      auto result = future.get();
+      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                  "Succesfull?: %d", result->success);
+    };
+  auto future_result = set_flight_mode_client_->async_send_request(request, response_received_callback);
+
 }
 
 void Goal3DDisplay::on_click_armButton()
 {
-  auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arming state %d", arming_state_);
+  while (!set_flight_mode_client_->wait_for_service(std::chrono::seconds(1))) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                     "client interrupted while waiting for service to appear.");
+        return;
+      }
+      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                  "waiting for service to appear...");
+  }
+  auto request = std::make_shared<proposed_aerial_msgs::srv::SetFlightMode::Request>();
 
   if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
-    px4_msgs::msg::VehicleCommand msg_vehicle_command;
-    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-    msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM;
-    msg_vehicle_command.param1 = 1;
-    msg_vehicle_command.confirmation = 1;
-    msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-    msg_vehicle_command.target_component = 1;
-    msg_vehicle_command.from_external = true;
-    publisher_vehicle_command_->publish(msg_vehicle_command);
-    RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "ARMING_STATE_INIT");
-
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED)
-  {
-    px4_msgs::msg::VehicleCommand msg_vehicle_command;
-    msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-    msg_vehicle_command.command = px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM;
-    msg_vehicle_command.param1 = 0;
-    msg_vehicle_command.confirmation = 1;
-    msg_vehicle_command.source_system = 255;
-    msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-    msg_vehicle_command.target_component = 1;
-    msg_vehicle_command.from_external = true;
-    publisher_vehicle_command_->publish(msg_vehicle_command);
-    RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "VEHICLE_CMD_COMPONENT_ARM_DISARM");
+    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED;
+  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED){
+    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED;
   }
+
+  using ServiceResponseFuture =
+    rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedFuture;
+  auto response_received_callback = [this](ServiceResponseFuture future) {
+      auto result = future.get();
+      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                  "Succesfull?: %d", result->success);
+
+      if(result->result.flight_mode == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED)
+        RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                    "Fligh mode?: ARMED");
+      if(result->result.flight_mode == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED)
+        RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                    "Fligh mode?: DISARMED");
+    };
+  auto future_result = set_flight_mode_client_->async_send_request(request, response_received_callback);
 }
 
 void Goal3DDisplay::valueChangedInterface()
@@ -370,6 +354,11 @@ void Goal3DDisplay::vehicle_status_callback(px4_msgs::msg::VehicleStatus::ConstS
 
 void Goal3DDisplay::subcribe2topics()
 {
+
+  set_flight_mode_client_ = rviz_ros_node_.lock()->get_raw_node()->
+        create_client<proposed_aerial_msgs::srv::SetFlightMode>(set_flight_mode_name_);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Service client: " + set_flight_mode_name_);
+
   vehicle_gps_position_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<sensor_msgs::msg::NavSatFix>(
         vehicle_gps_position_name_,
@@ -427,11 +416,6 @@ void Goal3DDisplay::subcribe2topics()
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_status_name_);
 
-  publisher_vehicle_command_ =
-    rviz_ros_node_.lock()->get_raw_node()->
-        create_publisher<px4_msgs::msg::VehicleCommand>(vehicle_command_name_, 10);
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Publish to: " + vehicle_command_name_);
-
   publisher_setpoint_ =
     rviz_ros_node_.lock()->get_raw_node()->
       create_publisher<px4_msgs::msg::PositionSetpoint>(position_setpoint_topic_name_, 10);
@@ -449,21 +433,21 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   std::string namespace_str(text.toUtf8().constData());
 
   vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
-  vehicle_command_name_ = "/" + namespace_str + "/vehicle_command";
   vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
   odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
   position_setpoint_topic_name_ = "/" + namespace_str + "/position_setpoint";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
+  set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
 
   vehicle_gps_position_sub_.reset();
   vehicle_status_sub_.reset();
   vehicle_attitude_sub_.reset();
   vehicle_land_detected_sub_.reset();
   vehicle_odometry_sub_.reset();
-  publisher_vehicle_command_.reset();
   publisher_setpoint_.reset();
+  set_flight_mode_client_.reset();
 
   subcribe2topics();
 }
@@ -471,18 +455,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
 void Goal3DDisplay::on_click_refresheButton()
 {
   add_namespaces_to_combobox();
-
-  auto time_node = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-  px4_msgs::msg::VehicleCommand msg_vehicle_command;
-  msg_vehicle_command.timestamp = time_node.nanoseconds()/1000;
-  msg_vehicle_command.command = 175;//px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_HOME;
-  msg_vehicle_command.confirmation = 1;
-  msg_vehicle_command.source_system = 255;
-  msg_vehicle_command.target_system = get_target_system(std::string(namespace_->currentText().toUtf8().constData()));
-  msg_vehicle_command.target_component = 1;
-  msg_vehicle_command.from_external = true;
-  publisher_vehicle_command_->publish(msg_vehicle_command);
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "VEHICLE_CMD_DO_SET_HOME");
 }
 
 geometry_msgs::msg::TransformStamped toMsg(const tf2::Stamped<tf2::Transform>& in)
