@@ -33,7 +33,6 @@
 #include "geometry_msgs/msg/vector3.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "std_msgs/msg/color_rgba.hpp"
 
 #include "px4_msgs/msg/vehicle_gps_position.hpp"
 #include "px4_msgs/msg/vehicle_command.hpp"
