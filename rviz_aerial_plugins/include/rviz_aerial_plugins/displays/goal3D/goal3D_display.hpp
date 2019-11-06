@@ -124,6 +124,8 @@ private:
   QLabel* label_arming_state_;
   QLabel* label_name_arming_state_;
   int arming_state_;
+  QLabel* label_name_nav_state_;
+  QLabel* label_nav_state_;
 
   QLabel* label_vehicle_type_;
   QLabel* label_name_vehicle_type_;

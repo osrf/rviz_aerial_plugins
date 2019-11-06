@@ -84,6 +84,8 @@ void Goal3DDisplay::onInitialize()
   label_name_arming_state_ = new QLabel("Arming state:");
   label_vehicle_type_ = new QLabel();
   label_name_vehicle_type_ = new QLabel("Vehicle type:");
+  label_nav_state_ = new QLabel();
+  label_name_nav_state_ = new QLabel("Flight mode:");
 
   button_arm_ = new QPushButton("Arm");
   button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
@@ -97,11 +99,13 @@ void Goal3DDisplay::onInitialize()
   grid->addWidget(refresh_button, 0, 1);
   grid->addWidget(label_name_arming_state_, 1, 0);
   grid->addWidget(label_arming_state_, 1, 1);
-  grid->addWidget(label_name_vehicle_type_, 2, 0);
-  grid->addWidget(label_vehicle_type_, 2, 1);
-  grid->addWidget(button_arm_, 3, 0, 1, 2);
-  grid->addWidget(button_takeoff_, 4, 0, 1, 2);
-  grid->addWidget(button_position_setpoint_, 5, 0, 1, 2);
+  grid->addWidget(label_name_nav_state_, 2, 0);
+  grid->addWidget(label_nav_state_, 2, 1);
+  grid->addWidget(label_name_vehicle_type_, 3, 0);
+  grid->addWidget(label_vehicle_type_, 3, 1);
+  grid->addWidget(button_arm_, 4, 0, 1, 2);
+  grid->addWidget(button_takeoff_, 5, 0, 1, 2);
+  grid->addWidget(button_position_setpoint_, 6, 0, 1, 2);
 
   setLayout(grid);
   QObject::connect(namespace_, SIGNAL(currentIndexChanged(QString)),this, SLOT(on_changed_namespace(QString)));
@@ -309,6 +313,52 @@ void Goal3DDisplay::vehicle_status_callback(px4_msgs::msg::VehicleStatus::ConstS
     label_vehicle_type_->setText("Rover");
   }else{
     label_vehicle_type_->setText("Unknown");
+  }
+
+  if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_MANUAL){
+    label_nav_state_->setText("Manual mode");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ALTCTL){
+    label_nav_state_->setText("Altitude control mode");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_POSCTL){
+    label_nav_state_->setText("Position control mode");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_MISSION){
+    label_nav_state_->setText("Mission");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LOITER){
+    label_nav_state_->setText("Loiter");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RTL){
+    label_nav_state_->setText("RTL");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RCRECOVER){
+    label_nav_state_->setText("RC recover");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RTGS){
+    label_nav_state_->setText("RTGS");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LANDENGFAIL){
+    label_nav_state_->setText("LANDENGFAIL");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LANDGPSFAIL){
+    label_nav_state_->setText("LANDGPSFAIL");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ACRO){
+    label_nav_state_->setText("Acro");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_UNUSED){
+    label_nav_state_->setText("Unused");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_DESCEND){
+    label_nav_state_->setText("Descend");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_TERMINATION){
+    label_nav_state_->setText("Termination");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_OFFBOARD){
+    label_nav_state_->setText("Offboard");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_STAB){
+    label_nav_state_->setText("Stabilized mode");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_RATTITUDE){
+    label_nav_state_->setText("Rattitude");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_TAKEOFF){
+    label_nav_state_->setText("Takeoff");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LAND){
+    label_nav_state_->setText("Land");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_FOLLOW_TARGET){
+    label_nav_state_->setText("Auto follow");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_PRECLAND){
+    label_nav_state_->setText("Precision land");
+  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ORBIT){
+    label_nav_state_->setText("Orbit");
   }
 
   if(arming_state_ != msg->arming_state){
