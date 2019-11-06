@@ -29,7 +29,6 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   vehicle_status_name_ = "/iris_0/vehicle_status";
   attitude_topic_name_ = "/iris_0/attitude";
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
-  position_setpoint_topic_name_ = "/iris_0/position_setpoint";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
   pose_stamped_name_ = "/iris_0/command_pose";
   set_flight_mode_name_ = "/iris_0/set_flight_mode";
@@ -416,11 +415,6 @@ void Goal3DDisplay::subcribe2topics()
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_status_name_);
 
-  publisher_setpoint_ =
-    rviz_ros_node_.lock()->get_raw_node()->
-      create_publisher<px4_msgs::msg::PositionSetpoint>(position_setpoint_topic_name_, 10);
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Publish to: " + position_setpoint_topic_name_);
-
   publisher_pose_stamped_ =
     rviz_ros_node_.lock()->get_raw_node()->
       create_publisher<geometry_msgs::msg::PoseStamped>(pose_stamped_name_, 10);
@@ -436,7 +430,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
   odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
-  position_setpoint_topic_name_ = "/" + namespace_str + "/position_setpoint";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
@@ -446,7 +439,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_attitude_sub_.reset();
   vehicle_land_detected_sub_.reset();
   vehicle_odometry_sub_.reset();
-  publisher_setpoint_.reset();
   set_flight_mode_client_.reset();
 
   subcribe2topics();

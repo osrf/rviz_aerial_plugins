@@ -42,7 +42,6 @@
 
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "px4_msgs/msg/vehicle_odometry.hpp"
-#include "px4_msgs/msg/position_setpoint.hpp"
 #include "px4_msgs/msg/vehicle_land_detected.hpp"
 
 #include "visualization_msgs/msg/interactive_marker.hpp"
@@ -118,7 +117,6 @@ private:
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
   rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
-  rclcpp::Publisher<px4_msgs::msg::PositionSetpoint>::SharedPtr publisher_setpoint_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_pose_stamped_;
 
   rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedPtr set_flight_mode_client_;
@@ -137,7 +135,6 @@ private:
   std::string vehicle_status_name_;
   std::string attitude_topic_name_;
   std::string odometry_topic_name_;
-  std::string position_setpoint_topic_name_;
   std::string vehicle_land_detected_topic_name_;
   std::string pose_stamped_name_;
   std::string set_flight_mode_name_;
