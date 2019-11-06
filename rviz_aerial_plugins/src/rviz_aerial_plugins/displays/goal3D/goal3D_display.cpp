@@ -160,60 +160,21 @@ void Goal3DDisplay::on_click_position_setpointButton()
   std::string str_test =   std::string(namespace_->currentText().toUtf8().constData()) + "/odom";
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "map %s", str_test.c_str());
 
-  // if(buffer_->canTransform("map",
-  //                         str_test,
-  //                          tf2::TimePoint(), tf2::durationFromSec(1.0)))
-  // buffer_->waitForTransform(
-  //       "map",
-  //       str_test,
-  //          tf2::TimePoint(), tf2::durationFromSec(1.0),
-  //         [this, int_marker](const tf2_ros::TransformStampedFuture & future)
-  //     {
-  //       RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "waitForTransform");
-  //       geometry_msgs::msg::TransformStamped transform_callback_result;
-  //       transform_callback_result = future.get();
-  //       RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "%.5f\t%.5f\t%.5f",
-  //                   transform_callback_result.transform.translation.x,
-  //                   transform_callback_result.transform.translation.y,
-  //                   transform_callback_result.transform.translation.z);
+  geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
 
-    geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
+  geometry_msgs::msg::PoseStamped msg;
+  msg.header.stamp = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
 
-        geometry_msgs::msg::PoseStamped msg;
-        msg.header.stamp = rviz_ros_node_.lock()->get_raw_node()->get_clock()->now();
-        // msg.pose.position.x = transform_callback_result.transform.translation.x;
-        // msg.pose.position.y = transform_callback_result.transform.translation.y;
-        // msg.pose.position.z = int_marker.pose.position.z;
-        //
-        // msg.pose.orientation.x = transform_callback_result.transform.rotation.x;
-        // msg.pose.orientation.y = transform_callback_result.transform.rotation.y;
-        // msg.pose.orientation.z = transform_callback_result.transform.rotation.z;
-        // msg.pose.orientation.w = transform_callback_result.transform.rotation.w;
+  msg.pose.position.x = int_marker.pose.position.x - transform_callback_result.transform.translation.x;
+  msg.pose.position.y = int_marker.pose.position.y - transform_callback_result.transform.translation.y;
+  msg.pose.position.z = int_marker.pose.position.z;
 
-        msg.pose.position.x = int_marker.pose.position.x - transform_callback_result.transform.translation.x;
-        msg.pose.position.y = int_marker.pose.position.y - transform_callback_result.transform.translation.y;
-        msg.pose.position.z = int_marker.pose.position.z;
+  msg.pose.orientation.x = int_marker.pose.orientation.x;
+  msg.pose.orientation.y = int_marker.pose.orientation.y;
+  msg.pose.orientation.z = int_marker.pose.orientation.z;
+  msg.pose.orientation.w = int_marker.pose.orientation.w;
 
-        msg.pose.orientation.x = int_marker.pose.orientation.x;
-        msg.pose.orientation.y = int_marker.pose.orientation.y;
-        msg.pose.orientation.z = int_marker.pose.orientation.z;
-        msg.pose.orientation.w = int_marker.pose.orientation.w;
-
-        publisher_pose_stamped_->publish(msg);
-  //     });
-  // else{
-  //   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "canTransform fails");
-  //
-  // }
-
-  // msg.pose.position.x = int_marker.pose.position.x;
-  // msg.pose.position.y = int_marker.pose.position.y;
-  // msg.pose.position.z = int_marker.pose.position.z;
-  //
-  // msg.pose.orientation.x = int_marker.pose.orientation.x;
-  // msg.pose.orientation.y = int_marker.pose.orientation.y;
-  // msg.pose.orientation.z = int_marker.pose.orientation.z;
-  // msg.pose.orientation.w = int_marker.pose.orientation.w;
+  publisher_pose_stamped_->publish(msg);
 
 }
 
