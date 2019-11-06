@@ -25,7 +25,7 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   rviz_common::Panel(parent), rviz_ros_node_()
 
 {
-  vehicle_gps_position_name_ = "/iris_0/vehicle_gps_position";
+  vehicle_gps_position_name_ = "/iris_0/gps";
   vehicle_command_name_ = "/iris_0/vehicle_command";
   vehicle_status_name_ = "/iris_0/vehicle_status";
   attitude_topic_name_ = "/iris_0/vehicle_attitude";
@@ -371,13 +371,13 @@ void Goal3DDisplay::vehicle_status_callback(px4_msgs::msg::VehicleStatus::ConstS
 void Goal3DDisplay::subcribe2topics()
 {
   vehicle_gps_position_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-      template create_subscription<px4_msgs::msg::VehicleGpsPosition>(
+      template create_subscription<sensor_msgs::msg::NavSatFix>(
         vehicle_gps_position_name_,
       10,
-      [this](px4_msgs::msg::VehicleGpsPosition::ConstSharedPtr msg) {
-        latitude_ = msg->lat*1E-7;
-        longitude_ = msg->lon*1E-7;
-        altitude_ = msg->alt*1E-3;
+      [this](sensor_msgs::msg::NavSatFix::ConstSharedPtr msg) {
+        latitude_ = msg->latitude;
+        longitude_ = msg->longitude;
+        altitude_ = msg->altitude;
     });
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_gps_position_name_);
@@ -448,7 +448,7 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
 {
   std::string namespace_str(text.toUtf8().constData());
 
-  vehicle_gps_position_name_ = "/" + namespace_str + "/vehicle_gps_position";
+  vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
   vehicle_command_name_ = "/" + namespace_str + "/vehicle_command";
   vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
   attitude_topic_name_ = "/" + namespace_str + "/vehicle_attitude";

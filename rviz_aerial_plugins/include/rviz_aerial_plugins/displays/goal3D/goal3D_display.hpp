@@ -34,7 +34,9 @@
 #include "geometry_msgs/msg/quaternion.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
-#include "px4_msgs/msg/vehicle_gps_position.hpp"
+#include <sensor_msgs/msg/battery_state.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
+
 #include "px4_msgs/msg/vehicle_command.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "px4_msgs/msg/vehicle_attitude.hpp"
@@ -110,7 +112,7 @@ private:
   visualization_msgs::msg::Marker
     makeBox(const visualization_msgs::msg::InteractiveMarker & msg);
 
-  rclcpp::Subscription<px4_msgs::msg::VehicleGpsPosition>::SharedPtr vehicle_gps_position_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr vehicle_gps_position_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
