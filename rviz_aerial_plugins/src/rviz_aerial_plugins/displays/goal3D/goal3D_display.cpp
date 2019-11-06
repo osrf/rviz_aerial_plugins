@@ -28,7 +28,7 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   vehicle_gps_position_name_ = "/iris_0/gps";
   vehicle_command_name_ = "/iris_0/vehicle_command";
   vehicle_status_name_ = "/iris_0/vehicle_status";
-  attitude_topic_name_ = "/iris_0/vehicle_attitude";
+  attitude_topic_name_ = "/iris_0/attitude";
   odometry_topic_name_ = "/iris_0/vehicle_odometry";
   position_setpoint_topic_name_ = "/iris_0/position_setpoint";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
@@ -383,16 +383,16 @@ void Goal3DDisplay::subcribe2topics()
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_gps_position_name_);
 
   vehicle_attitude_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-      template create_subscription<px4_msgs::msg::VehicleAttitude>(
+      template create_subscription<proposed_aerial_msgs::msg::Attitude>(
         attitude_topic_name_,
       10,
-      [this](px4_msgs::msg::VehicleAttitude::ConstSharedPtr msg) {
+      [this](proposed_aerial_msgs::msg::Attitude::ConstSharedPtr msg) {
 
         geometry_msgs::msg::Quaternion q;
-        q.x = msg->q[1];
-        q.y = msg->q[2];
-        q.z = msg->q[3];
-        q.w = msg->q[0];
+        q.x = msg->orientation.x;
+        q.y = msg->orientation.y;
+        q.z = msg->orientation.z;
+        q.w = msg->orientation.w;
         double yaw, pitch, roll;
         tf2::getEulerYPR(q, yaw, pitch, roll);
         heading_ = yaw;
@@ -451,7 +451,7 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
   vehicle_command_name_ = "/" + namespace_str + "/vehicle_command";
   vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
-  attitude_topic_name_ = "/" + namespace_str + "/vehicle_attitude";
+  attitude_topic_name_ = "/" + namespace_str + "/attitude";
   odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
   position_setpoint_topic_name_ = "/" + namespace_str + "/position_setpoint";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";

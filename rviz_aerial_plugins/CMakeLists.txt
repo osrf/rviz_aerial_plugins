@@ -67,6 +67,7 @@ find_package(interactive_markers REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(proposed_aerial_msgs REQUIRED)
 
 # These need to be added in the add_library() call so AUTOMOC detects them.
 set(rviz_aerial_plugins_headers_to_moc
@@ -124,6 +125,7 @@ ament_target_dependencies(rviz_aerial_plugins
   std_msgs
   geometry_msgs
   visualization_msgs
+  proposed_aerial_msgs
 )
 
 ament_export_include_directories(include)

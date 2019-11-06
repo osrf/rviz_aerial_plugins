@@ -37,9 +37,10 @@
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 
+#include "proposed_aerial_msgs/msg/attitude.hpp"
+
 #include "px4_msgs/msg/vehicle_command.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
-#include "px4_msgs/msg/vehicle_attitude.hpp"
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/position_setpoint.hpp"
 #include "px4_msgs/msg/vehicle_land_detected.hpp"
@@ -115,7 +116,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr vehicle_gps_position_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
-  rclcpp::Subscription<px4_msgs::msg::VehicleAttitude>::SharedPtr vehicle_attitude_sub_;
+  rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
   rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr publisher_vehicle_command_;
   rclcpp::Publisher<px4_msgs::msg::PositionSetpoint>::SharedPtr publisher_setpoint_;
