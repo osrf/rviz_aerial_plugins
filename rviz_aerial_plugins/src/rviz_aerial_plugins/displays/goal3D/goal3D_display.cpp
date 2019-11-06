@@ -334,12 +334,13 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
-  set_flight_mode_name_ = "/" + namespace_str + "/flight_mode";
+  flight_mode_name_ = "/" + namespace_str + "/flight_mode";
 
   vehicle_gps_position_sub_.reset();
   vehicle_attitude_sub_.reset();
   set_flight_mode_client_.reset();
   flight_mode_sub_.reset();
+  publisher_pose_stamped_.reset();
 
   subcribe2topics();
 }
