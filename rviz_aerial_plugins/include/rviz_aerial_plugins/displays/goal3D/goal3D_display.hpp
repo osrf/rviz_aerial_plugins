@@ -41,7 +41,6 @@
 #include "proposed_aerial_msgs/srv/set_flight_mode.hpp"
 
 #include "px4_msgs/msg/vehicle_status.hpp"
-#include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/vehicle_land_detected.hpp"
 
 #include "visualization_msgs/msg/interactive_marker.hpp"
@@ -113,7 +112,6 @@ private:
     makeBox(const visualization_msgs::msg::InteractiveMarker & msg);
 
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr vehicle_gps_position_sub_;
-  rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr vehicle_odometry_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
   rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
@@ -134,7 +132,6 @@ private:
   std::string vehicle_gps_position_name_;
   std::string vehicle_status_name_;
   std::string attitude_topic_name_;
-  std::string odometry_topic_name_;
   std::string vehicle_land_detected_topic_name_;
   std::string pose_stamped_name_;
   std::string set_flight_mode_name_;
@@ -148,7 +145,6 @@ private:
   float longitude_;
   float altitude_;
   float heading_;
-  float altitude_rel_;
   bool flying_;
 
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

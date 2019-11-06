@@ -28,7 +28,6 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   vehicle_gps_position_name_ = "/iris_0/gps";
   vehicle_status_name_ = "/iris_0/vehicle_status";
   attitude_topic_name_ = "/iris_0/attitude";
-  odometry_topic_name_ = "/iris_0/vehicle_odometry";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
   pose_stamped_name_ = "/iris_0/command_pose";
   set_flight_mode_name_ = "/iris_0/set_flight_mode";
@@ -387,15 +386,6 @@ void Goal3DDisplay::subcribe2topics()
     });
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + attitude_topic_name_);
 
-  vehicle_odometry_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-        template create_subscription<px4_msgs::msg::VehicleOdometry>(
-          odometry_topic_name_,
-        10,
-        [this](px4_msgs::msg::VehicleOdometry::ConstSharedPtr msg) {
-          altitude_rel_ = -msg->z;
-      });
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + odometry_topic_name_);
-
   vehicle_land_detected_sub_ = rviz_ros_node_.lock()->get_raw_node()->
           template create_subscription<px4_msgs::msg::VehicleLandDetected>(
             vehicle_land_detected_topic_name_,
@@ -429,7 +419,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
   vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
-  odometry_topic_name_ = "/" + namespace_str + "/vehicle_odometry";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
@@ -438,7 +427,6 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_status_sub_.reset();
   vehicle_attitude_sub_.reset();
   vehicle_land_detected_sub_.reset();
-  vehicle_odometry_sub_.reset();
   set_flight_mode_client_.reset();
 
   subcribe2topics();
