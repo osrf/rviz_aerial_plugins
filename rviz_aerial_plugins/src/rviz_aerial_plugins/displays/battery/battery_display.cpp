@@ -64,10 +64,10 @@ void BatteryDisplay::reset()
 }
 
 // // Handle an incoming message.
-void BatteryDisplay::processMessage( const px4_msgs::msg::BatteryStatus::ConstSharedPtr msg )
+void BatteryDisplay::processMessage( const sensor_msgs::msg::BatteryState::ConstSharedPtr msg )
 {
-  battery_status_property_->setFloat(msg->voltage_v);
-  battery_cells_property_->setInt(msg->cell_count);
+  battery_status_property_->setFloat(msg->voltage);
+  battery_cells_property_->setInt(msg->cell_voltage.size());
 }
 
 } // namespace displays

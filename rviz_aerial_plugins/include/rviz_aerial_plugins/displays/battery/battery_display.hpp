@@ -21,10 +21,8 @@
 #ifndef Q_MOC_RUN
 
 #include "rviz_common/ros_topic_display.hpp"
-// #include "hrim_sensor_imu_msgs/msg/imu.hpp"
-// #include "hrim_geometry_msgs/msg/vector3.hpp"
 
-#include "px4_msgs/msg/battery_status.hpp"
+#include "sensor_msgs/msg/battery_state.hpp"
 
 # include "rviz_aerial_plugins/visibility_control.hpp"
 #endif
@@ -53,7 +51,7 @@ namespace displays
 {
 
 class RVIZ_AERIAL_PLUGINS_PUBLIC BatteryDisplay:
-  public rviz_common::RosTopicDisplay<px4_msgs::msg::BatteryStatus>
+  public rviz_common::RosTopicDisplay<sensor_msgs::msg::BatteryState>
 {
 Q_OBJECT
 public:
@@ -65,7 +63,7 @@ public:
   void reset() override;
 
 private:
-  void processMessage( const px4_msgs::msg::BatteryStatus::ConstSharedPtr msg ) override;
+  void processMessage( const sensor_msgs::msg::BatteryState::ConstSharedPtr msg ) override;
 
   rviz_common::properties::IntProperty * battery_cells_property_;
   rviz_common::properties::FloatProperty * battery_status_property_;
