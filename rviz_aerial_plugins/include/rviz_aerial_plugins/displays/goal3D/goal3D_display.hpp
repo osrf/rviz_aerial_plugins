@@ -41,9 +41,6 @@
 #include "proposed_aerial_msgs/msg/flight_mode.hpp"
 #include "proposed_aerial_msgs/srv/set_flight_mode.hpp"
 
-#include "px4_msgs/msg/vehicle_status.hpp"
-#include "px4_msgs/msg/vehicle_land_detected.hpp"
-
 #include "visualization_msgs/msg/interactive_marker.hpp"
 #include <interactive_markers/menu_handler.hpp>
 
@@ -115,7 +112,6 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr vehicle_gps_position_sub_;
   rclcpp::Subscription<proposed_aerial_msgs::msg::FlightMode>::SharedPtr flight_mode_sub_;
   rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
-  rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr vehicle_land_detected_sub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_pose_stamped_;
 
   rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedPtr set_flight_mode_client_;
@@ -127,7 +123,6 @@ private:
 
   std::string vehicle_gps_position_name_;
   std::string attitude_topic_name_;
-  std::string vehicle_land_detected_topic_name_;
   std::string pose_stamped_name_;
   std::string set_flight_mode_name_;
   std::string flight_mode_name_;
@@ -135,7 +130,6 @@ private:
   QPushButton* button_arm_;
   QPushButton* button_takeoff_;
   QPushButton* button_position_setpoint_;
-  void vehicle_status_callback(px4_msgs::msg::VehicleStatus::ConstSharedPtr msg);
 
   float latitude_;
   float longitude_;

@@ -27,7 +27,6 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
 {
   vehicle_gps_position_name_ = "/iris_0/gps";
   attitude_topic_name_ = "/iris_0/attitude";
-  vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
   pose_stamped_name_ = "/iris_0/command_pose";
   set_flight_mode_name_ = "/iris_0/set_flight_mode";
   flight_mode_name_ = "/iris_0/flight_mode";
@@ -303,23 +302,14 @@ void Goal3DDisplay::subcribe2topics()
     });
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + attitude_topic_name_);
 
-  vehicle_land_detected_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-          template create_subscription<px4_msgs::msg::VehicleLandDetected>(
-            vehicle_land_detected_topic_name_,
-          10,
-          [this](px4_msgs::msg::VehicleLandDetected::ConstSharedPtr msg) {
-            if(msg->landed != !flying_){
-              flying_ = !msg->landed;
-              emit valueChangedInterface_signal();
-            }
-        });
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_land_detected_topic_name_);
-
   flight_mode_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<proposed_aerial_msgs::msg::FlightMode>(
         flight_mode_name_,
       10,
       [this](proposed_aerial_msgs::msg::FlightMode::ConstSharedPtr msg) {
+        flying_ = msg->flight_mode != proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED &&
+          msg->flight_mode != proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_LANDED &&
+          msg->flight_mode != proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED;
         if(flight_mode_ != msg->flight_mode){
           flight_mode_ = msg->flight_mode;
           emit valueChangedInterface_signal();
@@ -342,14 +332,12 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
 
   vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
-  vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
   set_flight_mode_name_ = "/" + namespace_str + "/flight_mode";
 
   vehicle_gps_position_sub_.reset();
   vehicle_attitude_sub_.reset();
-  vehicle_land_detected_sub_.reset();
   set_flight_mode_client_.reset();
   flight_mode_sub_.reset();
 
