@@ -26,13 +26,12 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
 
 {
   vehicle_gps_position_name_ = "/iris_0/gps";
-  vehicle_status_name_ = "/iris_0/vehicle_status";
   attitude_topic_name_ = "/iris_0/attitude";
   vehicle_land_detected_topic_name_ = "/iris_0/vehicle_land_detected";
   pose_stamped_name_ = "/iris_0/command_pose";
   set_flight_mode_name_ = "/iris_0/set_flight_mode";
+  flight_mode_name_ = "/iris_0/flight_mode";
 
-  arming_state_ = 0;
   latitude_ = 0;
   longitude_ = 0;
   altitude_ = 0;
@@ -79,17 +78,12 @@ void Goal3DDisplay::onInitialize()
   QGridLayout *grid = new QGridLayout;
 
   label_arming_state_ = new QLabel();
-  label_name_arming_state_ = new QLabel("Arming state:");
-  label_vehicle_type_ = new QLabel();
-  label_name_vehicle_type_ = new QLabel("Vehicle type:");
-  label_nav_state_ = new QLabel();
-  label_name_nav_state_ = new QLabel("Flight mode:");
+  label_name_arming_state_ = new QLabel("State:");
 
   button_arm_ = new QPushButton("Arm");
   button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
   button_takeoff_ = new QPushButton("Takeoff");
   button_takeoff_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Takeoff.png"));
-  button_takeoff_->setEnabled(false);
   button_position_setpoint_ = new QPushButton("Go to");
   button_position_setpoint_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Goal3D.png"));
 
@@ -97,10 +91,6 @@ void Goal3DDisplay::onInitialize()
   grid->addWidget(refresh_button, 0, 1);
   grid->addWidget(label_name_arming_state_, 1, 0);
   grid->addWidget(label_arming_state_, 1, 1);
-  grid->addWidget(label_name_nav_state_, 2, 0);
-  grid->addWidget(label_nav_state_, 2, 1);
-  grid->addWidget(label_name_vehicle_type_, 3, 0);
-  grid->addWidget(label_vehicle_type_, 3, 1);
   grid->addWidget(button_arm_, 4, 0, 1, 2);
   grid->addWidget(button_takeoff_, 5, 0, 1, 2);
   grid->addWidget(button_position_setpoint_, 6, 0, 1, 2);
@@ -224,9 +214,9 @@ void Goal3DDisplay::on_click_armButton()
   }
   auto request = std::make_shared<proposed_aerial_msgs::srv::SetFlightMode::Request>();
 
-  if(arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
+  if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED){
     request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED;
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED){
+  }else if (flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED){
     request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED;
   }
 
@@ -260,93 +250,20 @@ void Goal3DDisplay::valueChangedInterface()
     button_arm_->setDisabled(false);
   }
 
-  if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_INIT){
-    label_arming_state_->setText(QString("Init"));
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY){
+  if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED){
     label_arming_state_->setText(QString("Standby"));
     button_arm_->setText(QString("Arm"));
     button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
-    button_takeoff_->setEnabled(false);
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED){
+  }else if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED){
     label_arming_state_->setText(QString("Armed"));
     button_arm_->setText(QString("Disarm"));
     button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOff.png"));
-    button_takeoff_->setEnabled(true);
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_STANDBY_ERROR){
-    label_arming_state_->setText(QString("Standby error"));
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_SHUTDOWN){
-    label_arming_state_->setText(QString("Shutdown"));
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_IN_AIR_RESTORE){
-    label_arming_state_->setText(QString("In air restore"));
-  }else if (arming_state_ == px4_msgs::msg::VehicleStatus::ARMING_STATE_MAX){
-    label_arming_state_->setText(QString("Max"));
-  }
-}
-
-void Goal3DDisplay::vehicle_status_callback(px4_msgs::msg::VehicleStatus::ConstSharedPtr msg)
-{
-  if (msg->vehicle_type == px4_msgs::msg::VehicleStatus::VEHICLE_TYPE_ROTARY_WING){
-    label_vehicle_type_->setText("Quadcopter");
-  }
-  else if (msg->vehicle_type == px4_msgs::msg::VehicleStatus::VEHICLE_TYPE_FIXED_WING){
-    label_vehicle_type_->setText("Fixed wing");
-  }
-  else if (msg->vehicle_type == px4_msgs::msg::VehicleStatus::VEHICLE_TYPE_ROVER){
-    label_vehicle_type_->setText("Rover");
-  }else{
-    label_vehicle_type_->setText("Unknown");
-  }
-
-  if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_MANUAL){
-    label_nav_state_->setText("Manual mode");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ALTCTL){
-    label_nav_state_->setText("Altitude control mode");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_POSCTL){
-    label_nav_state_->setText("Position control mode");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_MISSION){
-    label_nav_state_->setText("Mission");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LOITER){
-    label_nav_state_->setText("Loiter");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RTL){
-    label_nav_state_->setText("RTL");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RCRECOVER){
-    label_nav_state_->setText("RC recover");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_RTGS){
-    label_nav_state_->setText("RTGS");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LANDENGFAIL){
-    label_nav_state_->setText("LANDENGFAIL");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LANDGPSFAIL){
-    label_nav_state_->setText("LANDGPSFAIL");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ACRO){
-    label_nav_state_->setText("Acro");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_UNUSED){
-    label_nav_state_->setText("Unused");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_DESCEND){
-    label_nav_state_->setText("Descend");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_TERMINATION){
-    label_nav_state_->setText("Termination");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_OFFBOARD){
-    label_nav_state_->setText("Offboard");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_STAB){
-    label_nav_state_->setText("Stabilized mode");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_RATTITUDE){
-    label_nav_state_->setText("Rattitude");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_TAKEOFF){
-    label_nav_state_->setText("Takeoff");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_LAND){
-    label_nav_state_->setText("Land");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_FOLLOW_TARGET){
-    label_nav_state_->setText("Auto follow");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_AUTO_PRECLAND){
-    label_nav_state_->setText("Precision land");
-  }else if(msg->nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_ORBIT){
-    label_nav_state_->setText("Orbit");
-  }
-
-  if(arming_state_ != msg->arming_state){
-    arming_state_ = msg->arming_state;
-    // RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "arming_state %d", arming_state);
-    emit valueChangedInterface_signal();
+  }else if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_FLYING){
+    label_arming_state_->setText("Flying");
+  }else if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_LANDED){
+    label_arming_state_->setText("Landed");
+  }else if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_RTL){
+    label_arming_state_->setText("RTL");
   }
 }
 
@@ -398,12 +315,19 @@ void Goal3DDisplay::subcribe2topics()
         });
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_land_detected_topic_name_);
 
-  vehicle_status_sub_ = rviz_ros_node_.lock()->get_raw_node()->
-      template create_subscription<px4_msgs::msg::VehicleStatus>(
-        vehicle_status_name_,
-      10, std::bind(&Goal3DDisplay::vehicle_status_callback, this, std::placeholders::_1));
+  flight_mode_sub_ = rviz_ros_node_.lock()->get_raw_node()->
+      template create_subscription<proposed_aerial_msgs::msg::FlightMode>(
+        flight_mode_name_,
+      10,
+      [this](proposed_aerial_msgs::msg::FlightMode::ConstSharedPtr msg) {
+        if(flight_mode_ != msg->flight_mode){
+          flight_mode_ = msg->flight_mode;
+          emit valueChangedInterface_signal();
+        }
+    });
 
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_status_name_);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + flight_mode_name_);
+
 
   publisher_pose_stamped_ =
     rviz_ros_node_.lock()->get_raw_node()->
@@ -417,17 +341,17 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   std::string namespace_str(text.toUtf8().constData());
 
   vehicle_gps_position_name_ = "/" + namespace_str + "/gps";
-  vehicle_status_name_ = "/" + namespace_str + "/vehicle_status";
   attitude_topic_name_ = "/" + namespace_str + "/attitude";
   vehicle_land_detected_topic_name_ = "/" + namespace_str + "/vehicle_land_detected";
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
+  set_flight_mode_name_ = "/" + namespace_str + "/flight_mode";
 
   vehicle_gps_position_sub_.reset();
-  vehicle_status_sub_.reset();
   vehicle_attitude_sub_.reset();
   vehicle_land_detected_sub_.reset();
   set_flight_mode_client_.reset();
+  flight_mode_sub_.reset();
 
   subcribe2topics();
 }
