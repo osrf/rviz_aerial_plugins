@@ -64,6 +64,7 @@ private:
 
 private slots:
   void on_changed_namespace(const QString& text);
+  void on_click_refresheButton();
 
 protected:
   CompassWidget* compass_widget_;

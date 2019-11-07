@@ -43,6 +43,9 @@ void FlighInfoDisplay::onInitialize()
   adi_widget_ = new ADIWidget();
   vi_widget_ = new VehicleInformationWidget();
   namespace_ = new QComboBox();
+  QPushButton* refresh_button = new QPushButton("Refresh");
+  refresh_button->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Refresh.png"));
+
   add_namespaces_to_combobox();
 
   QGridLayout *grid = new QGridLayout;
@@ -51,13 +54,20 @@ void FlighInfoDisplay::onInitialize()
   grid->addWidget( adi_widget_, 0, 1);
   grid->addWidget( vi_widget_, 1, 0, 1, 2);
   grid->addWidget( namespace_, 2, 0);
+  grid->addWidget( refresh_button, 2, 1);
 
   QObject::connect(namespace_, SIGNAL(currentIndexChanged(QString)),this, SLOT(on_changed_namespace(QString)));
+  QObject::connect(refresh_button, SIGNAL(clicked()),this, SLOT(on_click_refresheButton()));
 
   setLayout(grid);
 
   subcribe2topics();
 
+}
+
+void FlighInfoDisplay::on_click_refresheButton()
+{
+  add_namespaces_to_combobox();
 }
 
 void FlighInfoDisplay::add_namespaces_to_combobox()
