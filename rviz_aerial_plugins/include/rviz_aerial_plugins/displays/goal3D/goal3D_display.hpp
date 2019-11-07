@@ -20,6 +20,8 @@
 #include <string>
 #include <rviz_aerial_plugins/utils/utils.hpp>
 
+#include <rclcpp_action/rclcpp_action.hpp>
+
 #ifndef Q_MOC_RUN
 
 #include "rviz_common/panel.hpp"
@@ -39,7 +41,7 @@
 
 #include "proposed_aerial_msgs/msg/attitude.hpp"
 #include "proposed_aerial_msgs/msg/flight_mode.hpp"
-#include "proposed_aerial_msgs/srv/set_flight_mode.hpp"
+#include "proposed_aerial_msgs/action/set_flight_mode.hpp"
 
 #include "visualization_msgs/msg/interactive_marker.hpp"
 #include <interactive_markers/menu_handler.hpp>
@@ -114,7 +116,12 @@ private:
   rclcpp::Subscription<proposed_aerial_msgs::msg::Attitude>::SharedPtr vehicle_attitude_sub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_pose_stamped_;
 
-  rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedPtr set_flight_mode_client_;
+  using SetFlightModeAction = proposed_aerial_msgs::action::SetFlightMode;
+  using GoalHandleSetFlightModeAction = rclcpp_action::ClientGoalHandle<SetFlightModeAction>;
+
+  rclcpp_action::Client<proposed_aerial_msgs::action::SetFlightMode>::SharedPtr set_flight_mode_client_;
+  void goal_response_callback(std::shared_future<GoalHandleSetFlightModeAction::SharedPtr> future);
+  void result_callback(const GoalHandleSetFlightModeAction::WrappedResult & result);
 
   QComboBox* namespace_;
   QLabel* label_arming_state_;

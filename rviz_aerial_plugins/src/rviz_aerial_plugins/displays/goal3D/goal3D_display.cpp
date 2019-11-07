@@ -171,69 +171,85 @@ void Goal3DDisplay::on_click_position_setpointButton()
 
 void Goal3DDisplay::on_click_takeoffButton()
 {
-
-  while (!set_flight_mode_client_->wait_for_service(std::chrono::seconds(1))) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                     "client interrupted while waiting for service to appear.");
-        return;
-      }
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                  "waiting for service to appear...");
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+    RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                 "Action server not available after waiting");
+    return;
   }
-  auto request = std::make_shared<proposed_aerial_msgs::srv::SetFlightMode::Request>();
+
+  // Populate a goal
+  auto goal_msg =  proposed_aerial_msgs::action::SetFlightMode::Goal();
+  goal_msg.goal.flight_mode = 10;
 
   if(!flying_){
-    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_FLYING;
+    goal_msg.goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_FLYING;
   }else{
-    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_LANDED;
+    goal_msg.goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_LANDED;
   }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedFuture;
-  auto response_received_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                  "Succesfull?: %d", result->success);
-    };
-  auto future_result = set_flight_mode_client_->async_send_request(request, response_received_callback);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arm/Disarm request");
+  auto send_goal_options = rclcpp_action::Client<proposed_aerial_msgs::action::SetFlightMode>::SendGoalOptions();
+  send_goal_options.goal_response_callback =
+     std::bind(&Goal3DDisplay::goal_response_callback, this, std::placeholders::_1);
+  send_goal_options.result_callback =
+     std::bind(&Goal3DDisplay::result_callback, this, std::placeholders::_1);
+   auto goal_handle_future = set_flight_mode_client_->async_send_goal(goal_msg, send_goal_options);
+}
 
+void Goal3DDisplay::result_callback(const GoalHandleSetFlightModeAction::WrappedResult & result)
+{
+  switch (result.code) {
+    case rclcpp_action::ResultCode::SUCCEEDED:
+      break;
+    case rclcpp_action::ResultCode::ABORTED:
+      RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arm/Disarm was aborted");
+      return;
+    case rclcpp_action::ResultCode::CANCELED:
+      RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arm/Disarm was canceled");
+      return;
+    default:
+      RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Unknown result code");
+      return;
+  }
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "result received %d", result.result->success);
+}
+
+void Goal3DDisplay::goal_response_callback(std::shared_future<GoalHandleSetFlightModeAction::SharedPtr> future)
+{
+  auto goal_handle = future.get();
+  if (!goal_handle) {
+    RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "goal was rejected by server");
+  }else{
+    RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "accepted by server, waiting for result");
+  }
 }
 
 void Goal3DDisplay::on_click_armButton()
 {
-  while (!set_flight_mode_client_->wait_for_service(std::chrono::seconds(1))) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                     "client interrupted while waiting for service to appear.");
-        return;
-      }
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                  "waiting for service to appear...");
+
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+    RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                 "Action server not available after waiting");
+    return;
   }
-  auto request = std::make_shared<proposed_aerial_msgs::srv::SetFlightMode::Request>();
+
+  // Populate a goal
+  auto goal_msg =  proposed_aerial_msgs::action::SetFlightMode::Goal();
+  goal_msg.goal.flight_mode = 10;
 
   if(flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED){
-    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED;
+    goal_msg.goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED;
   }else if (flight_mode_ == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED){
-    request->goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED;
+    goal_msg.goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED;
   }
 
-  using ServiceResponseFuture =
-    rclcpp::Client<proposed_aerial_msgs::srv::SetFlightMode>::SharedFuture;
-  auto response_received_callback = [this](ServiceResponseFuture future) {
-      auto result = future.get();
-      RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                  "Succesfull?: %d", result->success);
-
-      if(result->result.flight_mode == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_ARMED)
-        RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                    "Fligh mode?: ARMED");
-      if(result->result.flight_mode == proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_DISARMED)
-        RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
-                    "Fligh mode?: DISARMED");
-    };
-  auto future_result = set_flight_mode_client_->async_send_request(request, response_received_callback);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Arm/Disarm request");
+  auto send_goal_options = rclcpp_action::Client<proposed_aerial_msgs::action::SetFlightMode>::SendGoalOptions();
+  send_goal_options.goal_response_callback =
+     std::bind(&Goal3DDisplay::goal_response_callback, this, std::placeholders::_1);
+  send_goal_options.result_callback =
+     std::bind(&Goal3DDisplay::result_callback, this, std::placeholders::_1);
+   auto goal_handle_future = set_flight_mode_client_->async_send_goal(goal_msg, send_goal_options);
 }
 
 void Goal3DDisplay::valueChangedInterface()
@@ -269,9 +285,13 @@ void Goal3DDisplay::valueChangedInterface()
 void Goal3DDisplay::subcribe2topics()
 {
 
-  set_flight_mode_client_ = rviz_ros_node_.lock()->get_raw_node()->
-        create_client<proposed_aerial_msgs::srv::SetFlightMode>(set_flight_mode_name_);
-  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Service client: " + set_flight_mode_name_);
+  set_flight_mode_client_ =  rclcpp_action::create_client<proposed_aerial_msgs::action::SetFlightMode>(
+      rviz_ros_node_.lock()->get_raw_node()->get_node_base_interface(),
+      rviz_ros_node_.lock()->get_raw_node()->get_node_graph_interface(),
+      rviz_ros_node_.lock()->get_raw_node()->get_node_logging_interface(),
+      rviz_ros_node_.lock()->get_raw_node()->get_node_waitables_interface(),
+      set_flight_mode_name_);
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Action client: " + set_flight_mode_name_);
 
   vehicle_gps_position_sub_ = rviz_ros_node_.lock()->get_raw_node()->
       template create_subscription<sensor_msgs::msg::NavSatFix>(
