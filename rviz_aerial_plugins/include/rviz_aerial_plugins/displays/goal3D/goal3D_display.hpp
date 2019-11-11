@@ -92,6 +92,8 @@ private slots:
   void on_click_takeoffButton();
   void on_click_position_setpointButton();
   void on_changed_namespace(const QString &text);
+  void on_click_rltButton();
+  
 private:
   rviz_common::ros_integration::RosNodeAbstractionIface::WeakPtr rviz_ros_node_;
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
