@@ -88,6 +88,7 @@ void Goal3DDisplay::onInitialize()
   button_takeoff_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Takeoff.png"));
   button_position_setpoint_ = new QPushButton("Go to");
   button_position_setpoint_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/Goal3D.png"));
+  QPushButton* button_rtl = new QPushButton("RTL");
 
   grid->addWidget(namespace_, 0, 0);
   grid->addWidget(refresh_button, 0, 1);
@@ -98,11 +99,13 @@ void Goal3DDisplay::onInitialize()
   grid->addWidget(button_arm_, 4, 0, 1, 2);
   grid->addWidget(button_takeoff_, 5, 0, 1, 2);
   grid->addWidget(button_position_setpoint_, 6, 0, 1, 2);
+  grid->addWidget(button_rtl, 7, 0, 1, 2);
 
   setLayout(grid);
   QObject::connect(namespace_, SIGNAL(currentIndexChanged(QString)),this, SLOT(on_changed_namespace(QString)));
   QObject::connect(refresh_button, SIGNAL(clicked()),this, SLOT(on_click_refresheButton()));
   QObject::connect(button_arm_, SIGNAL(clicked()),this, SLOT(on_click_armButton()));
+  QObject::connect(button_rtl, SIGNAL(clicked()),this, SLOT(on_click_rltButton()));
   QObject::connect(button_takeoff_, SIGNAL(clicked()),this, SLOT(on_click_takeoffButton()));
   QObject::connect(button_position_setpoint_, SIGNAL(clicked()),this, SLOT(on_click_position_setpointButton()));
   QObject::connect(this, SIGNAL(valueChangedInterface_signal()),this, SLOT(valueChangedInterface()));
@@ -146,6 +149,27 @@ void Goal3DDisplay::onInitialize()
 
   makeQuadrocopterMarker(tf2::Vector3(0, 0, 3));
   server_->applyChanges();
+}
+
+void Goal3DDisplay::on_click_rltButton()
+{
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+    RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
+                 "Action server not available after waiting");
+    return;
+  }
+
+  // Populate a goal
+  auto goal_msg =  proposed_aerial_msgs::action::SetFlightMode::Goal();
+  goal_msg.goal.flight_mode = proposed_aerial_msgs::msg::FlightMode::FLIGHT_MODE_RTL;
+
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "RTL request");
+  auto send_goal_options = rclcpp_action::Client<proposed_aerial_msgs::action::SetFlightMode>::SendGoalOptions();
+  send_goal_options.goal_response_callback =
+     std::bind(&Goal3DDisplay::goal_response_callback, this, std::placeholders::_1);
+  send_goal_options.result_callback =
+     std::bind(&Goal3DDisplay::result_callback, this, std::placeholders::_1);
+   auto goal_handle_future = set_flight_mode_client_->async_send_goal(goal_msg, send_goal_options);
 }
 
 void Goal3DDisplay::on_click_position_setpointButton()
