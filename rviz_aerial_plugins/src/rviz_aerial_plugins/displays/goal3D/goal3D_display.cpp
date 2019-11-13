@@ -30,6 +30,7 @@ Goal3DDisplay::Goal3DDisplay(QWidget* parent):
   pose_stamped_name_ = "/iris_0/command_pose";
   set_flight_mode_name_ = "/iris_0/set_flight_mode";
   flight_mode_name_ = "/iris_0/flight_mode";
+  vehicle_status_name_ = "/iris_0/status";
 
   latitude_ = 0;
   longitude_ = 0;
@@ -78,6 +79,8 @@ void Goal3DDisplay::onInitialize()
 
   label_arming_state_ = new QLabel();
   label_name_arming_state_ = new QLabel("State:");
+  label_vehicle_type_ = new QLabel();
+  label_name_vehicle_type_ = new QLabel("Type:");
 
   button_arm_ = new QPushButton("Arm");
   button_arm_->setIcon(rviz_common::loadPixmap("package://rviz_aerial_plugins/icons/classes/PowerOn.png"));
@@ -90,6 +93,8 @@ void Goal3DDisplay::onInitialize()
   grid->addWidget(refresh_button, 0, 1);
   grid->addWidget(label_name_arming_state_, 1, 0);
   grid->addWidget(label_arming_state_, 1, 1);
+  grid->addWidget(label_name_vehicle_type_, 2, 0);
+  grid->addWidget(label_vehicle_type_, 2, 1);
   grid->addWidget(button_arm_, 4, 0, 1, 2);
   grid->addWidget(button_takeoff_, 5, 0, 1, 2);
   grid->addWidget(button_position_setpoint_, 6, 0, 1, 2);
@@ -338,6 +343,24 @@ void Goal3DDisplay::subcribe2topics()
 
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + flight_mode_name_);
 
+  vehicle_status_sub_ = rviz_ros_node_.lock()->get_raw_node()->
+      template create_subscription<proposed_aerial_msgs::msg::VehicleStatus>(
+        vehicle_status_name_,
+      10,
+      [this](proposed_aerial_msgs::msg::VehicleStatus::ConstSharedPtr msg) {
+        if(msg->system_type == proposed_aerial_msgs::msg::VehicleStatus::VEHICLE_TYPE_ROTARY_WING){
+          label_vehicle_type_->setText("Rotary wings");
+        }else if(msg->system_type == proposed_aerial_msgs::msg::VehicleStatus::VEHICLE_TYPE_FIXED_WING){
+          label_vehicle_type_->setText("Fixed wing");
+        }else if(msg->system_type == proposed_aerial_msgs::msg::VehicleStatus::VEHICLE_TYPE_ROVER){
+          label_vehicle_type_->setText("Rover");
+        }else if(msg->system_type == proposed_aerial_msgs::msg::VehicleStatus::VEHICLE_TYPE_VTOL){
+          label_vehicle_type_->setText("VTOL");
+        }else{
+          label_vehicle_type_->setText("UNKNOWN");
+        }
+    });
+  RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "Subscribe to: " + vehicle_status_name_);
 
   publisher_pose_stamped_ =
     rviz_ros_node_.lock()->get_raw_node()->
@@ -355,12 +378,14 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   pose_stamped_name_ = "/" + namespace_str + "/command_pose";
   set_flight_mode_name_ = "/" + namespace_str + "/set_flight_mode";
   flight_mode_name_ = "/" + namespace_str + "/flight_mode";
+  vehicle_status_name_ = "/" + namespace_str + "/status";
 
   vehicle_gps_position_sub_.reset();
   vehicle_attitude_sub_.reset();
   set_flight_mode_client_.reset();
   flight_mode_sub_.reset();
   publisher_pose_stamped_.reset();
+  vehicle_status_sub_.reset();
 
   subcribe2topics();
 }
