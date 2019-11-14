@@ -18,11 +18,9 @@ These plugins allow to visualize data from the drone such as the battery status,
 
 You can add the panels using the upper menu: `Panels` -> `Add New Panel`:
 
-<center>
-
-  ![](img/panels.png)
-
-</center>
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/panels.png"/>
+</p>
 
 You can choose in the `rviz_aerial_plugins` between:
 
@@ -30,47 +28,38 @@ You can choose in the `rviz_aerial_plugins` between:
 
 You can choose using the combobox which drone you want to display:
 
-<center>
-
-  ![](img/compass_and_adi.png)
-
-</center>
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/compass_and_adi.png"/>
+</p>
 
 #### Goal 3D
 
 Using this panel you can visualize the current state of the drone. Clicking on the buttons you can arm, disarm, takeoff, land or move to a specific 3D goal.
 
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/goal3d.png"/>
+</p>
+
 Add an interactive marker to the display panel and select the topic `/drone_goal`. Then an interactive marker will appear in the 3D visualizer. You can move this marker and clicking in the *Go to*  button the drone will perform the movement.
 
-<center>
+The [interactive marker](http://wiki.ros.org/rviz/Tutorials/Interactive%20Markers%3A%20Getting%20Started) allows the user to interact with them by changing their position or rotation, clicking on them or selecting something from a context menu assigned to each marker.
 
-  ![](img/goal3d.png)
-
-</center>
-
-<center>
-
-  ![](img/drone_3dpose.png)
-
-</center>
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/drone_3dpose.gif"/>
+</p>
 
 ### Displays
 
 From Display you can add Battery:
 
-<center>
-
-  ![](img/visualization.png)
-
-</center>
-
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/visualization.png"/>
+</p>
 
 #### Battery status
 
 This display will shows the current voltage and the number of cells.
 
-<center>
-
-  ![](img/battery.png)
-
-</center>
+<p align="center">
+  <img src="https://github.com/osrf/rviz_aerial_plugins/raw/master/img/battery.png"/>
+</p>
