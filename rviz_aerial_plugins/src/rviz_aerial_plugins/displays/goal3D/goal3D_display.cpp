@@ -177,7 +177,12 @@ void Goal3DDisplay::on_click_position_setpointButton()
   visualization_msgs::msg::InteractiveMarker int_marker;
   server_->get("quadrocopter", int_marker);
 
-  std::string str_test =   std::string(namespace_->currentText().toUtf8().constData()) + "/odom";
+  std::string namespace_combobox = std::string(namespace_->currentText().toUtf8().constData());
+
+  if(namespace_combobox.empty())
+    return;
+
+  std::string str_test = std::string(namespace_->currentText().toUtf8().constData()) + "/odom";
   RCLCPP_INFO(rviz_ros_node_.lock()->get_raw_node()->get_logger(), "map %s", str_test.c_str());
 
   geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
