@@ -22,7 +22,8 @@ std::set<std::string> get_namespaces(std::vector<std::string>& names_and_namespa
     if(topic_name_tokens.size() > 1){
       std::string namespace_topic = topic_name_tokens[0];
       if (namespace_topic.find("plane")!=std::string::npos ||
-          namespace_topic.find("iris")!=std::string::npos){
+          namespace_topic.find("iris")!=std::string::npos ||
+          namespace_topic.find("typhoon")!=std::string::npos){
             namespaces.insert(namespace_topic);
       }
     }
