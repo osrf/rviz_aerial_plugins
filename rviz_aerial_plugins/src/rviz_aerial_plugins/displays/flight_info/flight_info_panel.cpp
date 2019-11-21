@@ -68,6 +68,12 @@ void FlighInfoDisplay::onInitialize()
 void FlighInfoDisplay::on_click_refresheButton()
 {
   add_namespaces_to_combobox();
+  auto names_and_namespaces = rviz_ros_node_.lock()->get_raw_node()->get_node_names();
+
+  std::set<std::string> namespaces = get_namespaces(names_and_namespaces);
+
+  if(namespaces.size() > 0)
+    on_changed_namespace(QString((*namespaces.begin()).c_str()));
 }
 
 void FlighInfoDisplay::add_namespaces_to_combobox()
