@@ -125,7 +125,7 @@ void Goal3DDisplay::onInitialize()
   auto timer_callback =
      [this]() -> void {
        visualization_msgs::msg::InteractiveMarker int_marker;
-       server_->get("quadrocopter", int_marker);
+       server_->get("marker", int_marker);
 
        auto odom_tf_msg = std::make_shared<geometry_msgs::msg::TransformStamped>();
        odom_tf_msg->header.frame_id = "map";
@@ -147,8 +147,6 @@ void Goal3DDisplay::onInitialize()
 
   subcribe2topics();
 
-  makeQuadrocopterMarker(tf2::Vector3(0, 0, 3));
-  server_->applyChanges();
 }
 
 void Goal3DDisplay::on_click_rltButton()
@@ -175,7 +173,7 @@ void Goal3DDisplay::on_click_rltButton()
 void Goal3DDisplay::on_click_position_setpointButton()
 {
   visualization_msgs::msg::InteractiveMarker int_marker;
-  server_->get("quadrocopter", int_marker);
+  server_->get("marker", int_marker);
 
   std::string namespace_combobox = std::string(namespace_->currentText().toUtf8().constData());
 
@@ -417,6 +415,8 @@ void Goal3DDisplay::on_changed_namespace(const QString& text)
   vehicle_status_sub_.reset();
 
   subcribe2topics();
+  makeQuadrocopterMarker();
+  server_->applyChanges();
 }
 
 void Goal3DDisplay::on_click_refresheButton()
@@ -429,6 +429,9 @@ void Goal3DDisplay::on_click_refresheButton()
 
   if(namespaces.size() > 0)
     on_changed_namespace(QString((*namespaces.begin()).c_str()));
+
+  makeQuadrocopterMarker();
+  server_->applyChanges();
 }
 
 geometry_msgs::msg::TransformStamped toMsg(const tf2::Stamped<tf2::Transform>& in)
@@ -476,10 +479,26 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
   visualization_msgs::msg::Marker marker;
 
   marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-  marker.mesh_resource = "package://mavlink_sitl_gazebo/models/rotors_description/meshes/iris.stl";
-  marker.scale.x = msg.scale * 0.45;
-  marker.scale.y = msg.scale * 0.45;
-  marker.scale.z = msg.scale * 0.45;
+
+  std::string current_namespace(namespace_->currentText().toUtf8().constData());
+
+  if(current_namespace.find("plane")!=std::string::npos){
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/plane/meshes/body.dae";
+    marker.scale.x = msg.scale * 0.1;
+    marker.scale.y = msg.scale * 0.1;
+    marker.scale.z = msg.scale * 0.1;
+  }else if(current_namespace.find("typhoon")!=std::string::npos){
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/typhoon_h480/meshes/main_body_remeshed_v3.stl";
+    marker.scale.x = msg.scale * 0.001;
+    marker.scale.y = msg.scale * 0.001;
+    marker.scale.z = msg.scale * 0.001;
+  }else{
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/rotors_description/meshes/iris.stl";
+    marker.scale.x = msg.scale;
+    marker.scale.y = msg.scale;
+    marker.scale.z = msg.scale;
+  }
+
   marker.color.r = 0.5;
   marker.color.g = 0.5;
   marker.color.b = 0.5;
@@ -499,17 +518,29 @@ Goal3DDisplay::makeBoxControl(visualization_msgs::msg::InteractiveMarker & msg)
   return msg.controls.back();
 }
 
-void Goal3DDisplay::makeQuadrocopterMarker(const tf2::Vector3 & position)
+void Goal3DDisplay::makeQuadrocopterMarker()
 {
+  server_->clear();
+
+  std::string namespace_marker = std::string(namespace_->currentText().toUtf8().constData());
+
+  if(namespace_marker.empty())
+    return;
+
+  std::string str_test = std::string(namespace_marker) + "/odom";
+  geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
+
   visualization_msgs::msg::InteractiveMarker int_marker;
   int_marker.header.frame_id = "map";
-  int_marker.pose.position.x = position.getX();
-  int_marker.pose.position.y = position.getY();
-  int_marker.pose.position.z = position.getZ();
+  int_marker.pose.position.x = transform_callback_result.transform.translation.x;
+  int_marker.pose.position.y = transform_callback_result.transform.translation.y;
+  int_marker.pose.position.z = 3.0;
   int_marker.scale = 1;
 
-  int_marker.name = "quadrocopter";
-  int_marker.description = "Quadrocopter";
+  std::string current_namespace(namespace_->currentText().toUtf8().constData());
+
+  int_marker.name = "marker";
+  int_marker.description = current_namespace;
 
   makeBoxControl(int_marker);
 
