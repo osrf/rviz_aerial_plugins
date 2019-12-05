@@ -483,17 +483,17 @@ Goal3DDisplay::makeBox(const visualization_msgs::msg::InteractiveMarker & msg)
   std::string current_namespace(namespace_->currentText().toUtf8().constData());
 
   if(current_namespace.find("plane")!=std::string::npos){
-    marker.mesh_resource = "package://plane/meshes/body.dae";
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/plane/meshes/body.dae";
     marker.scale.x = msg.scale * 0.1;
     marker.scale.y = msg.scale * 0.1;
     marker.scale.z = msg.scale * 0.1;
   }else if(current_namespace.find("typhoon")!=std::string::npos){
-    marker.mesh_resource = "package://typhoon_h480/meshes/main_body_remeshed_v3.stl";
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/typhoon_h480/meshes/main_body_remeshed_v3.stl";
     marker.scale.x = msg.scale * 0.001;
     marker.scale.y = msg.scale * 0.001;
     marker.scale.z = msg.scale * 0.001;
   }else{
-    marker.mesh_resource = "package://rotors_description/meshes/iris.stl";
+    marker.mesh_resource = "package://mavlink_sitl_gazebo/models/rotors_description/meshes/iris.stl";
     marker.scale.x = msg.scale;
     marker.scale.y = msg.scale;
     marker.scale.z = msg.scale;
