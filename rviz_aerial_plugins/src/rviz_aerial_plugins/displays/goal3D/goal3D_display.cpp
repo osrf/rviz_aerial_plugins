@@ -125,7 +125,7 @@ void Goal3DDisplay::onInitialize()
   auto timer_callback =
      [this]() -> void {
        visualization_msgs::msg::InteractiveMarker int_marker;
-       server_->get("marker", int_marker);
+       server_->get("rviz_aerial_goal3D_marker", int_marker);
 
        auto odom_tf_msg = std::make_shared<geometry_msgs::msg::TransformStamped>();
        odom_tf_msg->header.frame_id = "map";
@@ -173,7 +173,7 @@ void Goal3DDisplay::on_click_rltButton()
 void Goal3DDisplay::on_click_position_setpointButton()
 {
   visualization_msgs::msg::InteractiveMarker int_marker;
-  server_->get("marker", int_marker);
+  server_->get("rviz_aerial_goal3D_marker", int_marker);
 
   std::string namespace_combobox = std::string(namespace_->currentText().toUtf8().constData());
 
@@ -539,7 +539,7 @@ void Goal3DDisplay::makeQuadrocopterMarker()
 
   std::string current_namespace(namespace_->currentText().toUtf8().constData());
 
-  int_marker.name = "marker";
+  int_marker.name = "rviz_aerial_goal3D_marker";
   int_marker.description = current_namespace;
 
   makeBoxControl(int_marker);
