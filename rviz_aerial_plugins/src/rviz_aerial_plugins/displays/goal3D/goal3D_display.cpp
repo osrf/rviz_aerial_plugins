@@ -151,7 +151,7 @@ void Goal3DDisplay::onInitialize()
 
 void Goal3DDisplay::on_click_rltButton()
 {
-  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(1))) {
     RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
                  "Action server not available after waiting");
     return;
@@ -203,7 +203,7 @@ void Goal3DDisplay::on_click_position_setpointButton()
 
 void Goal3DDisplay::on_click_takeoffButton()
 {
-  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(1))) {
     RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
                  "Action server not available after waiting");
     return;
@@ -259,7 +259,7 @@ void Goal3DDisplay::goal_response_callback(std::shared_future<GoalHandleSetFligh
 void Goal3DDisplay::on_click_armButton()
 {
 
-  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(20))) {
+  if (!set_flight_mode_client_->wait_for_action_server(std::chrono::seconds(1))) {
     RCLCPP_ERROR(rviz_ros_node_.lock()->get_raw_node()->get_logger(),
                  "Action server not available after waiting");
     return;
@@ -528,8 +528,12 @@ void Goal3DDisplay::makeQuadrocopterMarker()
     return;
 
   std::string str_test = std::string(namespace_marker) + "/odom";
-  geometry_msgs::msg::TransformStamped transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
-
+  geometry_msgs::msg::TransformStamped transform_callback_result;
+  try {
+    transform_callback_result = buffer_->lookupTransform("map", str_test, tf2::TimePoint());
+  } catch(tf2::LookupException ex) {
+    return;
+  }
   visualization_msgs::msg::InteractiveMarker int_marker;
   int_marker.header.frame_id = "map";
   int_marker.pose.position.x = transform_callback_result.transform.translation.x;
